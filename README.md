@@ -2,7 +2,7 @@
 
 An offline-first draft tracker for a live, in-person PPR fantasy football draft.
 
-Open it on your phone, tap names as they come off the board, and it keeps the picks, the board, and every roster in sync. It works with no connection and needs no account.
+Open it on your phone, tap names as they come off the board, and it keeps the picks, the board, and every roster in sync. It works with no connection. An account is optional, and only buys you the same draft on a second device.
 
 Built for a specific league: **1 QB, 2 RB, 2 WR, 1 TE, 2 FLEX, 1 DEF, 1 K**, snake order.
 
@@ -19,6 +19,7 @@ npm test           # unit and integration tests
 npm run build      # typecheck, then build to dist/
 npm run preview    # serve the built output
 npm run depth      # re-pull every team's depth chart from ESPN
+npm run stats      # re-pull last season's stats and this season's projections
 ```
 
 `npm run build` runs `tsc --noEmit` first, so a type error fails the build rather than shipping.
@@ -45,8 +46,10 @@ src/
   data/
     players.2026.json  the player pool, one record per player
     depth.2026.json    every team's ESPN depth chart, refreshed by a script
+    stats.2026.json    last season played and this season projected, per player
     pool.ts            validates the JSON at boot, merges imported ranks
     depth.ts           validates the charts, ties each name to a pool player
+    stats.ts           picks the stat lines worth showing for each position
     sources.ts         built-in rank source registry
     import.ts          parses and name-matches a pasted ranking
   domain/              pure functions, no DOM, no store
@@ -58,11 +61,17 @@ src/
     store.ts           minimal subscribe/notify store plus a Preact hook
     app.ts             the store instance and every action
     selectors.ts       derived reads: visible players, the queue, active sources
-    persistence.ts     localStorage, schema versioning, v1 and v2 migration
-  components/          Clock, Tabs, Controls, PlayerRow, Rail, StarButton, PlayerSheet
-  views/               Players, Queue, Compare, Board, Teams, Depth, Setup, SourcesPanel
+    persistence.ts     localStorage, per-account slots, schema versioning
+    supabase.ts        lazily loaded client, absent unless configured
+    auth.ts            sessions, and merging a device against the cloud
+    sync.ts            reads and writes the one row an account owns
+  components/          Clock, Tabs, Controls, PlayerRow, Rail, StarButton,
+                       PlayerSheet, Headshot, StatTable
+  views/               Players, Queue, Compare, Board, Teams, Depth, Setup,
+                       SourcesPanel, Auth, AccountPanel
 scripts/
   fetch-depth.mjs      rebuilds depth.2026.json from ESPN
+  fetch-stats.mjs      rebuilds stats.2026.json from Sleeper
 ```
 
 Three decisions carry most of the weight.
@@ -77,9 +86,10 @@ Three decisions carry most of the weight.
 
 ## Drafting
 
-Tap a player → a sheet shows every source's rank, the odds he lasts to your next pick, and who's on the clock → **Draft**.
+Tap a player → a sheet shows his headshot, every source's rank, last season against this season's projection, the odds he lasts to your next pick, and who's on the clock → **Draft**.
 
 - The top strip shows pick number, team on the clock, and what that team still needs.
+- **When it's your turn the whole strip goes red and pulses**, and the chip under it reads `★ You're up — pick now`. Missing your turn is the one mistake in a live draft you can't undo, so it is the one thing the app is loud about. Under `prefers-reduced-motion` the colour stays and the pulsing stops.
 - **Undo** removes the most recent pick.
 - Tapping a drafted player offers **Put back**, which pulls him out of the middle of the draft without undoing everything after him.
 - **Reset draft**, at the bottom of Setup, wipes every pick and takes two taps. Teams, names, draft slot, and imported rankings all survive it, so you can run a mock and then start the real thing.
@@ -88,7 +98,7 @@ Tap a player → a sheet shows every source's rank, the odds he lasts to your ne
 
 ## The tabs
 
-**Players** — the main list, sorted by any source or by AVG. Filter by position, including a FLEX chip for RB + WR + TE. Within a single position the list is split into tiers.
+**Players** — the main list, sorted by any source or by AVG. Filter by position, including a FLEX chip for RB + WR + TE. Within a single position the list is split into tiers. With no position filter, a green line marks each of your upcoming picks. See below.
 
 **Queue** — the players you want, in your order. See below.
 
@@ -101,6 +111,14 @@ Tap a player → a sheet shows every source's rank, the odds he lasts to your ne
 **Depth** — ESPN's depth chart for all 32 NFL teams. See below.
 
 **Setup** — league settings, ranking sources, and reset.
+
+### Your pick line
+
+On the Players tab, a green line marks where each of your own picks falls in the list. Drafting eighth of twelve, the first line sits between the 7th and 8th player and reads `Round 1 · Pick 8`: seven players go before you, so everything above the line is expected to be gone. The next line is `Round 2 · Pick 5`, because the snake turns round.
+
+The line is a **depth into the board, not a rank**. Every pick between now and yours costs one player, so the gap closes by one each time a name comes off — three picks in, the first line sits four players down. Rows for players already taken are stepped over rather than counted, so turning off **Hiding taken** moves nothing. Your soonest pick is drawn brightest; the ones after it are dimmed so a long list reads as a sequence rather than a row of alarms. On your own clock the line goes to the top and reads `On the clock now`.
+
+The lines only appear with the position filter on **ALL** and the search box empty. Under a filter the count would be a lie — seven picks are not seven running backs — and the honest thing is to show nothing rather than a number that reads as precise.
 
 ### Reading the rail
 
@@ -142,6 +160,55 @@ npm run depth -- --season 2027
 ```
 
 Two requests per team — the chart gives an ordered list of athlete ids, the roster turns those into names — then it writes `src/data/depth.2026.json` and prints a per-team count. Commit the result. The tab shows the pull date under the team name, because **a depth chart from three weeks ago is a guess**. Re-run it the morning of the draft.
+
+---
+
+## Stats and headshots
+
+The player sheet carries a portrait and two columns: what he actually did last season, and what he's projected to do this one. Both come from Sleeper, matched to all 300 players in the pool.
+
+Which lines show depends on the position, because a single shared table would be mostly blank whichever player you opened. A back gets carries and receiving work, since targets are what decide him in PPR; a quarterback gets passing and rushing; a kicker gets field goals; a defence gets sacks, takeaways, and points allowed. Rows both seasons leave empty are dropped, so a rookie shows a projection against a blank column instead of eight blank rows.
+
+An untouched stat and a zero are not the same thing, and the table keeps them apart: `–` means the season has no number for him, which is why 36 players — the rookies — have no last-season column at all.
+
+### Refreshing them
+
+```bash
+npm run stats              # current season
+npm run stats -- --season 2027
+```
+
+Three requests: Sleeper's player directory, last season's stats, this season's projections. The pool has no external ids, so the script matches 300 names to Sleeper's directory on exact name, then on surname within a team and position, which is what catches a "Hollywood" listed as "Marquise". It prints anything it couldn't match rather than leaving a sheet quietly empty, and it is expected to match all 300. The result is about 50KB of JSON, 11KB over the wire.
+
+**Headshots are the one thing left on the network.** They are around 100KB each and 300 of them would dwarf the app, so only the id is baked in and the image is fetched when the sheet opens. The service worker keeps the ones you've actually looked at, so a player reviewed on the sofa still has a face in the draft room. A portrait that can't load falls back to initials in the position colour, which is what a team defence gets too.
+
+---
+
+## Accounts and sync
+
+Optional, and **off unless the build is configured for it**. With no Supabase project set, the app is exactly what it was before accounts existed: no sign-in screen, storage on the device only, and none of the SDK in the bundle — the dynamic import is dead code that Rollup drops, which the build output confirms.
+
+Configured, it's email and password against Supabase Auth, and your league, queue, flags, and picks follow you to any device you sign in on.
+
+```bash
+cp .env.example .env.local     # then fill in the two values
+```
+
+Run `supabase/schema.sql` once in the SQL editor. It creates one row per account and turns on row-level security — the anon key ships in the bundle, so those policies are the only thing keeping one account's draft away from another's.
+
+### It is not a wall
+
+The sign-in screen has **Continue without an account**, and that choice sticks. This is deliberate: the app's one promise is that it works in a room with no signal, and a login you can't complete on bad hotel wifi would break it at exactly the wrong moment. An account is for carrying a draft between devices, not for permission to draft. Sign in later from Setup → Account, and the local draft you already started is adopted by the account rather than thrown away.
+
+A signed-in device is trusted from `localStorage` before Supabase is asked, so you open into your own draft immediately and offline, and confirmation happens in the background.
+
+### Which copy wins
+
+Local storage stays the source of truth during a draft; the cloud is a sync target, pushed on a 2.5-second debounce so a run of picks is one request.
+
+On sign-in the device and the cloud are reconciled by which was written last, and every payload carries the timestamp that decides it. Nothing is ever half-applied: one copy wins whole. If the pull fails, pushing stays switched off until it succeeds, so a stale device can't overwrite a newer draft from another one — it retries when the connection returns. An account with nothing saved anywhere adopts whatever draft is already on the device.
+
+Two accounts on one phone each get their own slot, and signing out returns the device to the local draft it had before, untouched.
 
 ---
 
@@ -210,7 +277,7 @@ A player one source ranks 465th isn't "ranked 465," he's off the board. Compare 
 
 Picks save after every action, debounced, and flush immediately when the app is backgrounded or closed.
 
-Everything lives in `localStorage` on the device you're drafting on. There is no account and no backend to send anything to. The flip side is that the draft is **per device and per browser** — your phone and your laptop each keep their own.
+Everything lives in `localStorage` on the device you're drafting on, under one slot per account. Without an account there is no backend to send anything to, and the draft is **per device and per browser** — your phone and your laptop each keep their own. Signing in adds a cloud copy on top; it never becomes the thing the draft depends on.
 
 On first load the app calls `navigator.storage.persist()`. Without it, browsers may evict a site's `localStorage` under storage pressure, and Safari clears it after seven days of not visiting. A granted persist exempts the origin from both, and installing to the home screen is what gets it granted.
 
@@ -220,15 +287,18 @@ Saved state is schema-versioned, and the queue, the flags, and your last depth-c
 
 `vite-plugin-pwa` precaches the whole app, so opening it with no connection works and costs no network round trip. A new deploy is fetched in the background and takes effect the next time you open it.
 
+Headshots are the one exception, fetched from Sleeper's CDN and kept in a runtime cache once seen. Everything a draft actually needs — players, ranks, depth charts, stats, projections — is in the bundle.
+
 ---
 
 ## Testing
 
-84 tests, no browser required.
+117 tests, no browser required.
 
-- `src/domain/*.test.ts` — snake order, lineup slotting, consensus, spread, rail geometry.
+- `src/domain/*.test.ts` — snake order, lineup slotting, consensus, spread, rail geometry, and where each of your picks lands in the list.
 - `src/data/import.test.ts` — ranking parsers and name matching, including ambiguity and duplicates.
-- `src/App.test.tsx` — the app rendered into a real DOM and driven through drafting, undo, put-back, search, every tab, queueing and reordering, flagging, reading and drafting off a depth chart, importing a source, muting a source, reset, reload persistence, and the v1 and v2 migrations.
+- `src/state/persistence.test.ts` — the payload round trip, the write stamp that decides a device against the cloud, and keeping two accounts on one device apart.
+- `src/App.test.tsx` — the app rendered into a real DOM and driven through drafting, undo, put-back, search, every tab, queueing and reordering, flagging, reading and drafting off a depth chart, importing a source, muting a source, reset, reload persistence, the v1 and v2 migrations, the pick lines under every filter, the stat panel per position, and a remembered account opening its own draft with no network.
 
 ---
 
@@ -236,11 +306,13 @@ Saved state is schema-versioned, and the queue, the flags, and your last depth-c
 
 - **No kickers or defenses on the Big Board**, so sorting by BIG in those positions returns nothing. Use another source.
 - **Ranks are a snapshot.** Pulled August 2026. Import a fresher ADP if something moved.
-- **Depth charts are a snapshot too**, and a faster-moving one. Run `npm run depth` and redeploy before draft day. There is no in-app refresh, because there is no backend to proxy ESPN through.
+- **Depth charts are a snapshot too**, and a faster-moving one. Run `npm run depth` and redeploy before draft day. There is no in-app refresh, because there is nothing in the app proxying ESPN.
+- **Projections are somebody else's opinion**, pulled once from Sleeper and baked in. They move through preseason; re-run `npm run stats` before draft day.
+- **Headshots need a connection the first time.** Ones you haven't opened before will be initials in a dead room.
 - **Depth charts cover the offense and the kicker only.** Offensive line, defense, and punt returners are dropped; nothing in this draft turns on the left guard.
 - **The queue has no drag handle.** Reordering is the arrows, which is slower for a long list but does not misfire on a phone mid-draft.
 - **No trades, keepers, or auction.** Straight snake only.
-- **One draft at a time**, on **one device**. The board is not shared or synced.
+- **One draft at a time per account.** Signing in carries that draft between your own devices; it is not a shared board, and two people cannot draft into it at once.
 - **The roster shape is configurable in the data model but not yet in the UI.** `LeagueSettings.roster` is read everywhere it matters; Setup just doesn't expose an editor for it yet.
 
 ---
@@ -250,3 +322,5 @@ Saved state is schema-versioned, and the queue, the flags, and your last depth-c
 Static site. Vercel detects Vite and builds with `npm run build` into `dist`. `vercel.json` sends `index.html` and `sw.js` with a revalidating cache header so a push reaches devices instead of sitting behind the CDN; the service worker handles offline caching.
 
 First-time setup: import the repo at [vercel.com/new](https://vercel.com/new). Framework Preset should detect as **Vite** — leave the build and output settings alone. After that, every push to `main` deploys, and pull requests get preview URLs.
+
+For accounts, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under Settings → Environment Variables and redeploy. They are read at build time, so a running deploy won't pick them up until it rebuilds. Leave them off and you get the local-only app, which is a perfectly good way to run this.

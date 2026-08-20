@@ -12,6 +12,7 @@ import {
 } from '../state/app';
 import { teamName } from '../domain/draft';
 import { SourcesPanel } from './SourcesPanel';
+import { AccountPanel } from './AccountPanel';
 import styles from './SetupView.module.css';
 
 const TEAM_RANGE = Array.from({ length: 13 }, (_, i) => i + 4); // 4–16
@@ -128,6 +129,11 @@ export function SetupView({ state }: { state: AppState }) {
           {picks.length} picks recorded. Changing team count will re-shuffle who owns them.
         </p>
       )}
+
+      <div class={styles.section}>
+        <span class="eyebrow">Account</span>
+        <AccountPanel />
+      </div>
 
       <div class={styles.section}>
         <span class="eyebrow">Rankings</span>

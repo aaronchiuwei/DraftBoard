@@ -23,7 +23,21 @@ export default defineConfig({
       workbox: {
         // the whole app is precached, so a draft-day load needs no network at all
         globPatterns: ['**/*.{js,css,html,svg,json}'],
-        cleanupOutdatedCaches: true
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            /* Headshots are the only thing left on the network, and far too
+               large to precache 300 of. Keeping the ones actually opened means
+               a player reviewed on the sofa still has a face in the draft room. */
+            urlPattern: /^https:\/\/sleepercdn\.com\/content\/nfl\/players\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'headshots',
+              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 120 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          }
+        ]
       }
     })
   ],

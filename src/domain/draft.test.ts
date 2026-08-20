@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  pickInRound,
   pickIndexForTurn,
   pickLabel,
+  pickMarkersFor,
   picksUntilTurn,
   roundOf,
   teamAtPick,
   upcomingPicksFor
 } from './draft';
-import type { LeagueSettings } from '../types';
+import type { DraftState, LeagueSettings } from '../types';
 import { DEFAULT_ROSTER } from './roster';
 
 const league = (teams: number, rounds: number, mySlot = 0): LeagueSettings => ({
@@ -70,6 +72,61 @@ describe('upcomingPicksFor', () => {
 
   it('excludes picks already made', () => {
     expect(upcomingPicksFor(0, 1, league(4, 3))).toEqual([7, 8]);
+  });
+});
+
+describe('pickInRound', () => {
+  it('is one-indexed within the round', () => {
+    expect(pickInRound(0, 12)).toBe(1);
+    expect(pickInRound(7, 12)).toBe(8);
+    expect(pickInRound(12, 12)).toBe(1);
+  });
+});
+
+describe('pickMarkersFor', () => {
+  const draft = (teams: number, rounds: number, mySlot: number, made: number): DraftState => ({
+    ready: true,
+    league: league(teams, rounds, mySlot),
+    picks: Array.from({ length: made }, (_, i) => i + 1)
+  });
+
+  it('puts the 8th pick of a 12-team draft after seven players', () => {
+    const [first] = pickMarkersFor(draft(12, 16, 7, 0), 7);
+    expect(first).toEqual({ pickIndex: 7, before: 7 });
+    expect(roundOf(7, 12)).toBe(1);
+    expect(pickInRound(7, 12)).toBe(8);
+  });
+
+  it('snakes back for the second round', () => {
+    const [, second] = pickMarkersFor(draft(12, 16, 7, 0), 7);
+    expect(second).toEqual({ pickIndex: 16, before: 16 });
+    expect(roundOf(16, 12)).toBe(2);
+    expect(pickInRound(16, 12)).toBe(5);
+  });
+
+  it('closes the gap as the picks ahead of you come in', () => {
+    const [first] = pickMarkersFor(draft(12, 16, 7, 3), 7);
+    expect(first).toEqual({ pickIndex: 7, before: 4 });
+  });
+
+  it('reads zero on your own clock, so the line sits above the list', () => {
+    const [first] = pickMarkersFor(draft(12, 16, 7, 7), 7);
+    expect(first).toEqual({ pickIndex: 7, before: 0 });
+  });
+
+  it('drops a pick once it has been used', () => {
+    const markers = pickMarkersFor(draft(12, 2, 7, 8), 7);
+    expect(markers.map(m => m.pickIndex)).toEqual([16]);
+  });
+
+  it('is empty once the team has no picks left', () => {
+    expect(pickMarkersFor(draft(4, 2, 0, 8), 0)).toEqual([]);
+  });
+
+  it('counts every pick between now and yours, back to back at the turn', () => {
+    // the last team in the round picks at 3 and again at 4
+    const markers = pickMarkersFor(draft(4, 3, 3, 0), 3);
+    expect(markers.map(m => m.before)).toEqual([3, 4, 11]);
   });
 });
 

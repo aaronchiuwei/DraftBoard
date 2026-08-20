@@ -4,6 +4,9 @@ import { rankOf } from '../domain/rankings';
 import { survivalOdds } from '../domain/analytics';
 import { selectHorizon, selectPool, selectSourceIds, selectSources } from '../state/selectors';
 import { closeSheet, draftPlayer, toggleFlagged, toggleQueued, undraftPlayer } from '../state/app';
+import { statsFor } from '../data/stats';
+import { Headshot } from './Headshot';
+import { StatTable } from './StatTable';
 import styles from './PlayerSheet.module.css';
 
 export function PlayerSheet({ state }: { state: AppState }) {
@@ -28,6 +31,7 @@ export function PlayerSheet({ state }: { state: AppState }) {
     !taken && draft.ready && !over
       ? survivalOdds(player, draft, pool, sourceIds, selectHorizon(state))
       : null;
+  const stats = statsFor(player);
 
   return (
     <div
@@ -37,11 +41,18 @@ export function PlayerSheet({ state }: { state: AppState }) {
       }}
     >
       <div class={styles.card}>
-        <div class={styles.name}>{player.name}</div>
-        <div class={styles.meta}>
-          <span style={{ color: `var(--${player.pos})`, fontWeight: 800 }}>{player.pos}</span>
-          {' · '}
-          {player.team}
+        <div class={styles.header}>
+          {/* keyed on the player so a failed portrait does not carry over to the
+              next sheet opened from the same list */}
+          <Headshot key={player.id} src={stats?.headshot ?? null} name={player.name} pos={player.pos} />
+          <div class={styles.headerText}>
+            <div class={styles.name}>{player.name}</div>
+            <div class={styles.meta}>
+              <span style={{ color: `var(--${player.pos})`, fontWeight: 800 }}>{player.pos}</span>
+              {' · '}
+              {player.team}
+            </div>
+          </div>
         </div>
 
         <div class={styles.ranks}>
@@ -66,6 +77,8 @@ export function PlayerSheet({ state }: { state: AppState }) {
             </div>
           </div>
         )}
+
+        {stats && <StatTable stats={stats} />}
 
         <div class={styles.to}>
           {taken ? (

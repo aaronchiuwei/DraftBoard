@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/preact';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact';
 
 /**
  * Each test gets its own storage backing map so drafts do not leak between
@@ -63,6 +63,23 @@ function listedNames() {
   );
 }
 
+/** Row names and pick-line labels in render order, with the lines bracketed. */
+function listWithPickLines(): string[] {
+  return [
+    ...document.querySelectorAll('div[class~="pickTag"], div[class~="row"] span[class~="name"]')
+  ].map(el => (el.className.includes('pickTag') ? `[${el.textContent}]` : (el.textContent ?? '')));
+}
+
+/** How many players the list shows above your next pick's line. */
+function playersAboveFirstPickLine(): number {
+  return listWithPickLines().findIndex(text => text.startsWith('['));
+}
+
+/** The pick the clock strip is showing, which the board also prints in a cell. */
+function onClockLabel(): string | undefined {
+  return document.querySelector('div[class~="pickNo"]')?.textContent ?? undefined;
+}
+
 /** Boots into a started 12-team draft. */
 async function startDraft() {
   freshStorage();
@@ -108,6 +125,7 @@ describe('draft flow', () => {
     await startDraft();
     expect(screen.getByText('1.01')).toBeTruthy();
     expect(screen.getByText('My Team')).toBeTruthy();
+    expect(screen.getByText("YOU'RE UP")).toBeTruthy();
     expect(screen.getByText(/Still needs QB, RB×2/)).toBeTruthy();
   });
 
@@ -119,6 +137,7 @@ describe('draft flow', () => {
 
     expect(screen.getByText('1.02')).toBeTruthy();
     expect(screen.getByText('Team 2')).toBeTruthy();
+    expect(screen.queryByText("YOU'RE UP")).toBeNull();
     expect(screen.queryByText('Jahmyr Gibbs')).toBeNull();
   });
 
@@ -154,6 +173,44 @@ describe('draft flow', () => {
     click(button('Undo'));
     // back on the clock for my team, RB slot open again
     expect(screen.getByText(/Still needs QB, RB×2/)).toBeTruthy();
+  });
+});
+
+describe('player sheet', () => {
+  it('shows last season beside this season\'s projection', async () => {
+    await startDraft();
+    click(row('Jahmyr Gibbs'));
+
+    expect(screen.getByText('2025')).toBeTruthy();
+    expect(screen.getByText('2026 proj')).toBeTruthy();
+    expect(screen.getByText('PPR PTS')).toBeTruthy();
+    // a running back is judged on his receiving work in PPR
+    expect(screen.getByText('REC YD')).toBeTruthy();
+  });
+
+  it('shows only the stats that mean something for the position', async () => {
+    await startDraft();
+    click(row('Brandon Aubrey'));
+
+    expect(screen.getByText('FG')).toBeTruthy();
+    expect(screen.queryByText('REC YD')).toBeNull();
+  });
+
+  it('points the headshot at the portrait for that player', async () => {
+    await startDraft();
+    click(row('Jahmyr Gibbs'));
+
+    const shot = document.querySelector('img');
+    expect(shot?.getAttribute('src')).toContain('sleepercdn.com');
+  });
+
+  it('falls back to initials for a team defence, which has no portrait', async () => {
+    await startDraft();
+    click(row('Houston Texans'));
+
+    expect(document.querySelector('img')).toBeNull();
+    expect(screen.getByText('HT')).toBeTruthy();
+    expect(screen.getByText('SACK')).toBeTruthy();
   });
 });
 
@@ -535,5 +592,247 @@ describe('persistence', () => {
     // the three picks went to teams A, B and C, one each
     click(button('Teams'));
     expect(screen.getByText('Starters — 1 of 10 filled')).toBeTruthy();
+  });
+});
+
+describe('accounts', () => {
+  /** A saved draft for one account slot, or for the device when userId is null. */
+  function savedDraft(picks: number[]) {
+    return JSON.stringify({
+      schema: 4,
+      savedAt: Date.now(),
+      draft: {
+        ready: true,
+        league: { teams: 12, rounds: 16, mySlot: 0, names: [], roster: [] },
+        picks
+      },
+      imported: [],
+      disabledSources: [],
+      queue: [],
+      flagged: [],
+      ui: {
+        view: 'board',
+        source: 'nffc',
+        pos: 'ALL',
+        hideDrafted: true,
+        compareSort: 'spread',
+        team: 0
+      }
+    });
+  }
+
+  function configureSupabase() {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'anon-key');
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('is invisible when the build has no project configured', async () => {
+    freshStorage();
+    await mountApp();
+    expect(screen.getByText('League setup')).toBeTruthy();
+    expect(screen.queryByText(/Continue without an account/)).toBeNull();
+  });
+
+  it('asks for an account before the draft when one is configured', async () => {
+    configureSupabase();
+    freshStorage();
+    await mountApp();
+    expect(screen.queryByText('League setup')).toBeNull();
+  });
+
+  /* The session is confirmed over the network, and a draft room has no network.
+     A device that remembers an account has to open that account's draft on its
+     own, which is also what keeps the right draft from being replaced on screen. */
+  it('opens a remembered account\'s draft without waiting for the network', async () => {
+    configureSupabase();
+    freshStorage({
+      'draftroom.lastUser': 'user-1',
+      'draftroom.v2.u.user-1': savedDraft([1, 2, 3, 4, 5]),
+      'draftroom.v2': savedDraft([1])
+    });
+    await mountApp();
+
+    // five picks in, not the one the device-local draft has
+    expect(onClockLabel()).toBe('1.06');
+  });
+
+  it('keeps a second account on the same device apart', async () => {
+    configureSupabase();
+    freshStorage({
+      'draftroom.lastUser': 'user-2',
+      'draftroom.v2.u.user-1': savedDraft([1, 2, 3, 4, 5]),
+      'draftroom.v2.u.user-2': savedDraft([1, 2])
+    });
+    await mountApp();
+
+    expect(onClockLabel()).toBe('1.03');
+  });
+});
+
+describe('local accounts', () => {
+  async function fillCredentials(email: string, password: string) {
+    fireEvent.input(screen.getByPlaceholderText('you@example.com'), { target: { value: email } });
+    fireEvent.input(screen.getByPlaceholderText('At least 6 characters'), {
+      target: { value: password }
+    });
+  }
+
+  async function createAccount(email: string, password: string) {
+    click(screen.getAllByRole('button', { name: 'Create account' })[0]);
+    await fillCredentials(email, password);
+    const submits = screen.getAllByRole('button', { name: 'Create account' });
+    click(submits[submits.length - 1]);
+    await waitFor(() => expect(screen.getByText(email)).toBeTruthy());
+  }
+
+  it('keeps two accounts on one device apart', async () => {
+    freshStorage();
+    await mountApp();
+    await createAccount('a@test.com', 'secret1');
+
+    click(button('Start draft'));
+    draft('Jahmyr Gibbs');
+    expect(onClockLabel()).toBe('1.02');
+
+    click(button('Setup'));
+    click(button('Sign out'));
+    await waitFor(() => expect(screen.getByPlaceholderText('you@example.com')).toBeTruthy());
+
+    await createAccount('b@test.com', 'secret2');
+    click(button('Start draft'));
+    expect(onClockLabel()).toBe('1.01');
+    expect(screen.getByText('Jahmyr Gibbs')).toBeTruthy();
+
+    click(button('Setup'));
+    click(button('Sign out'));
+    await waitFor(() => expect(screen.getByPlaceholderText('you@example.com')).toBeTruthy());
+
+    await fillCredentials('a@test.com', 'secret1');
+    click(
+      screen.getAllByRole('button', { name: 'Sign in' })[
+        screen.getAllByRole('button', { name: 'Sign in' }).length - 1
+      ]
+    );
+    await waitFor(() => expect(screen.queryByPlaceholderText('you@example.com')).toBeNull());
+
+    click(button('Players'));
+    expect(onClockLabel()).toBe('1.02');
+    expect(screen.queryByText('Jahmyr Gibbs')).toBeNull();
+  });
+
+  it('rejects a wrong password', async () => {
+    freshStorage();
+    await mountApp();
+    await createAccount('a@test.com', 'secret1');
+    click(button('Sign out'));
+    await waitFor(() => expect(screen.getByPlaceholderText('you@example.com')).toBeTruthy());
+
+    await fillCredentials('a@test.com', 'nope!!');
+    click(screen.getAllByRole('button', { name: 'Sign in' })[screen.getAllByRole('button', { name: 'Sign in' }).length - 1]);
+    await waitFor(() =>
+      expect(screen.getByText('That email and password do not match.')).toBeTruthy()
+    );
+  });
+});
+
+describe('your pick line', () => {
+  /** Boots straight into a running 12-team draft from a given slot. */
+  async function draftFromSlot(slot: number, picks: number[] = []) {
+    freshStorage({
+      'draftroom.v2': JSON.stringify({
+        schema: 4,
+        draft: {
+          ready: true,
+          league: { teams: 12, rounds: 16, mySlot: slot, names: [], roster: [] },
+          picks
+        },
+        imported: [],
+        disabledSources: [],
+        queue: [],
+        flagged: [],
+        ui: {
+          view: 'players',
+          source: 'nffc',
+          pos: 'ALL',
+          hideDrafted: true,
+          compareSort: 'spread',
+          team: 0
+        }
+      })
+    });
+    await mountApp();
+  }
+
+  it('draws the 8th pick between the 7th and 8th player', async () => {
+    await draftFromSlot(7);
+    expect(screen.getByText('Your pick · Round 1 · Pick 8')).toBeTruthy();
+    expect(playersAboveFirstPickLine()).toBe(7);
+  });
+
+  it('labels the second-round pick by where it falls in that round', async () => {
+    await draftFromSlot(7);
+    // twelve teams snaking back puts slot 8 fifth in the second round
+    expect(screen.getByText('Round 2 · Pick 5')).toBeTruthy();
+  });
+
+  it('moves the line up as the picks ahead of you come in', async () => {
+    await draftFromSlot(7, [1, 2, 3]);
+    expect(playersAboveFirstPickLine()).toBe(4);
+  });
+
+  it('counts players still on the board, not rows on screen', async () => {
+    await draftFromSlot(7, [1, 2, 3]);
+    click(button('Hiding taken'));
+
+    // the three taken players are back on screen but no longer count against
+    // the pick, so four available players still separate you from the line
+    const above = listWithPickLines().slice(0, playersAboveFirstPickLine());
+    expect(above).toHaveLength(7);
+    expect(above.slice(0, 3)).toEqual(listedNames().slice(0, 3));
+  });
+
+  it('says you are on the clock instead of counting nobody', async () => {
+    await draftFromSlot(0);
+    expect(screen.getByText('On the clock now')).toBeTruthy();
+    expect(playersAboveFirstPickLine()).toBe(0);
+  });
+
+  it('drops the lines under a position filter, where the count would not hold', async () => {
+    await draftFromSlot(7);
+    click(button('RB'));
+    expect(screen.queryByText('Your pick · Round 1 · Pick 8')).toBeNull();
+    expect(screen.queryByText('Round 1 · Pick 8')).toBeNull();
+    expect(playersAboveFirstPickLine()).toBe(-1);
+  });
+
+  it('drops the lines once the draft is over', async () => {
+    freshStorage({
+      'draftroom.v2': JSON.stringify({
+        schema: 4,
+        draft: {
+          ready: true,
+          league: { teams: 2, rounds: 1, mySlot: 1, names: [], roster: [] },
+          picks: [1, 2]
+        },
+        imported: [],
+        disabledSources: [],
+        queue: [],
+        flagged: [],
+        ui: {
+          view: 'players',
+          source: 'nffc',
+          pos: 'ALL',
+          hideDrafted: true,
+          compareSort: 'spread',
+          team: 0
+        }
+      })
+    });
+    await mountApp();
+    expect(playersAboveFirstPickLine()).toBe(-1);
   });
 });

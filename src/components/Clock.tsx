@@ -34,12 +34,14 @@ export function Clock({ state }: { state: AppState }) {
   // the top of the queue is the one thing you want without changing tabs
   const nextUp = draft.ready && !isDraftOver(draft) ? selectNextInQueue(state) : null;
   const showSignals =
-    draft.ready && !isDraftOver(draft) && (untilMyTurn !== null || runs.length > 0 || nextUp);
+    draft.ready &&
+    !isDraftOver(draft) &&
+    ((untilMyTurn !== null && untilMyTurn > 0) || runs.length > 0 || nextUp);
 
   return (
-    <div class={styles.clock}>
+    <div class={`${styles.clock} ${isMe ? styles.alert : ''}`}>
       <div class={styles.row}>
-        <div class={`${styles.pickNo} mono`}>{pickText}</div>
+        <div class={`${styles.pickNo} ${isMe ? styles.pickNoAlert : ''} mono`}>{pickText}</div>
         <div class={styles.who}>
           <div class={`${styles.name} ${isMe ? styles.me : ''}`}>{title}</div>
           <div class={styles.needs}>{subtitle}</div>
@@ -53,13 +55,17 @@ export function Clock({ state }: { state: AppState }) {
         </button>
       </div>
 
+      {isMe ? (
+        <div class={styles.youreUp} aria-live="assertive">
+          YOU'RE UP
+        </div>
+      ) : null}
+
       {showSignals && (
         <div class={styles.signals}>
-          {untilMyTurn !== null && (
-            <span class={styles.chip}>
-              {untilMyTurn === 0 ? "You're up" : `You pick in ${untilMyTurn}`}
-            </span>
-          )}
+          {untilMyTurn !== null && untilMyTurn > 0 ? (
+            <span class={styles.chip}>You pick in {untilMyTurn}</span>
+          ) : null}
           {nextUp && (
             <button
               class={`${styles.chip} ${styles.queued}`}

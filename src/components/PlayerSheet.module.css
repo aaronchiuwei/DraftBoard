@@ -35,6 +35,16 @@
   }
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerText {
+  min-width: 0;
+}
+
 .name {
   font-size: 21px;
   font-weight: 800;

@@ -1,0 +1,80 @@
+.stats {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 72px 72px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+}
+
+.row + .row {
+  border-top: 1px solid rgba(46, 56, 70, 0.5);
+}
+
+.head {
+  background: var(--raised);
+  padding: 7px 10px 6px;
+}
+
+.head span {
+  text-align: right;
+}
+
+.head span:first-child {
+  text-align: left;
+}
+
+.projHead {
+  color: var(--green);
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.value {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.proj {
+  color: var(--green);
+}
+
+/* The points line is the summary of every other line, so it carries the weight. */
+.points {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.points .label {
+  color: var(--text);
+}
+
+.points .value {
+  font-size: 15px;
+}
+
+.note {
+  padding: 6px 10px 7px;
+  border-top: 1px solid rgba(46, 56, 70, 0.5);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--dim);
+}

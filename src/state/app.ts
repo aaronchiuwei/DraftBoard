@@ -8,11 +8,22 @@ import type {
   ViewId
 } from '../types';
 import { createStore, useStoreState } from './store';
-import { loadState, saveState } from './persistence';
+import { loadState, readLastUser, saveState, writeLastUser } from './persistence';
 import { normalizeLeague } from '../domain/roster';
 import { defaultTeamNames, isDraftOver, totalPicks } from '../domain/draft';
 
-export const store = createStore<AppState>(loadState());
+/**
+ * Whose draft is in the store. Read from the device before anything async
+ * happens, so a signed-in user opens straight into their own draft instead of
+ * watching someone else's appear and be replaced.
+ */
+let activeUser: string | null = readLastUser();
+
+export const store = createStore<AppState>(loadState(activeUser));
+
+export function activeUserId(): string | null {
+  return activeUser;
+}
 
 export function useApp(): AppState {
   return useStoreState(store);
@@ -23,14 +34,26 @@ export function useApp(): AppState {
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 store.subscribe(() => {
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => saveState(store.get()), 150);
+  saveTimer = setTimeout(() => saveState(store.get(), activeUser), 150);
 });
 
 /** Flush immediately when the app is being backgrounded or closed. */
 export function flushSave(): void {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = null;
-  saveState(store.get());
+  saveState(store.get(), activeUser);
+}
+
+/**
+ * Hands the store to another account. The outgoing draft is written under its
+ * own key first, so signing out and back in returns to it untouched.
+ */
+export function adoptUser(userId: string | null, next: AppState): void {
+  flushSave();
+  activeUser = userId;
+  writeLastUser(userId);
+  store.set(() => next);
+  flushSave();
 }
 
 function patchUi(patch: Partial<UiState>): void {

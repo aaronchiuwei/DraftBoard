@@ -78,3 +78,31 @@ export function TierDivider({ index }: { index: number }) {
     </div>
   );
 }
+
+interface PickDividerProps {
+  round: number;
+  pick: number;
+  /** The soonest of your picks, drawn brighter than the ones after it. */
+  isNext: boolean;
+  /** True when this pick is the one on the clock right now. */
+  onClock: boolean;
+}
+
+/**
+ * Marks where one of your picks falls in the list. Everything above the line
+ * is expected to be gone by then, so the line is the reach-or-wait boundary.
+ */
+export function PickDivider({ round, pick, isNext, onClock }: PickDividerProps) {
+  return (
+    <div class={`${styles.pickTag} ${isNext ? styles.pickNext : ''}`}>
+      <span class={styles.pickLabel}>
+        {onClock
+          ? 'On the clock now'
+          : isNext
+            ? `Your pick · Round ${round} · Pick ${pick}`
+            : `Round ${round} · Pick ${pick}`}
+      </span>
+      <span class={styles.pickRule} />
+    </div>
+  );
+}

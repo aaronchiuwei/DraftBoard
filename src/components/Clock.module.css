@@ -39,7 +39,79 @@
 }
 
 .me {
-  color: var(--amber);
+  color: var(--red);
+}
+
+.alert .me,
+.alert .needs {
+  color: #fff;
+}
+
+.alert .needs {
+  opacity: 0.8;
+}
+
+.alert .undo {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Missing your turn is the one unrecoverable mistake in a live draft, so the
+   whole strip goes red rather than only a chip below it. */
+.alert {
+  background: #6b1520;
+  border-bottom: 2px solid var(--red);
+  animation: alertPulse 0.9s ease-in-out infinite;
+}
+
+@keyframes alertPulse {
+  0%,
+  100% {
+    background: #8a1c2a;
+  }
+  50% {
+    background: #4a1018;
+  }
+}
+
+.pickNoAlert {
+  color: #fff;
+  background: var(--red);
+  border-color: #fff;
+}
+
+.youreUp {
+  margin-top: 8px;
+  padding: 11px 12px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: #fff;
+  background: var(--red);
+  border-radius: 8px;
+  animation: youreUpFlash 0.85s steps(2, end) infinite;
+}
+
+@keyframes youreUpFlash {
+  50% {
+    background: #fff;
+    color: var(--red);
+  }
+}
+
+/* A flashing bar is an accessibility problem for some people; the colour alone
+   still carries the message, so only the motion is dropped. */
+@media (prefers-reduced-motion: reduce) {
+  .alert,
+  .youreUp {
+    animation: none;
+  }
+
+  .alert {
+    background: #6b1520;
+  }
 }
 
 .needs {

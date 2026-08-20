@@ -22,6 +22,11 @@ export function pickLabel(pickIndex: number, teams: number): string {
   return `${round}.${String(inRound).padStart(2, '0')}`;
 }
 
+/** Where in its own round a pick falls, one-indexed. */
+export function pickInRound(pickIndex: number, teams: number): number {
+  return (pickIndex % teams) + 1;
+}
+
 export function totalPicks(league: LeagueSettings): number {
   return league.teams * league.rounds;
 }
@@ -60,6 +65,29 @@ export function picksUntilTurn(
 ): number | null {
   const next = upcomingPicksFor(team, fromPick, league)[0];
   return next === undefined ? null : next - fromPick;
+}
+
+export interface PickMarker {
+  /** Zero-indexed overall pick this marker belongs to. */
+  pickIndex: number;
+  /**
+   * Players expected off the board before it. Reading down a list sorted by
+   * rank, everyone above the marker is gone by the time the pick comes round.
+   */
+  before: number;
+}
+
+/**
+ * A team's remaining picks expressed as depths into the available-player list,
+ * so the list can draw a line at each one. Every pick between now and yours
+ * costs one player, which is what makes the depth and the gap the same number.
+ */
+export function pickMarkersFor(draft: DraftState, team: number): PickMarker[] {
+  const current = currentPick(draft);
+  return upcomingPicksFor(team, current, draft.league).map(pickIndex => ({
+    pickIndex,
+    before: pickIndex - current
+  }));
 }
 
 export function teamName(league: LeagueSettings, team: number): string {

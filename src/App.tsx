@@ -10,11 +10,14 @@ import { BoardView } from './views/BoardView';
 import { TeamsView } from './views/TeamsView';
 import { DepthView } from './views/DepthView';
 import { SetupView } from './views/SetupView';
+import { AuthView } from './views/AuthView';
 import { setView, useApp } from './state/app';
+import { useAuth } from './state/auth';
 import styles from './App.module.css';
 
 export function App() {
   const state = useApp();
+  const auth = useAuth();
   const main = useRef<HTMLDivElement>(null);
   const view = state.ui.view;
 
@@ -25,6 +28,12 @@ export function App() {
 
   function onTab(next: ViewId) {
     setView(next);
+  }
+
+  // a build with no Supabase project, or a device that has opted out, never
+  // sees this and behaves exactly as it did before accounts existed
+  if (auth.configured && !auth.localOnly && auth.status !== 'signedIn') {
+    return <AuthView />;
   }
 
   return (
