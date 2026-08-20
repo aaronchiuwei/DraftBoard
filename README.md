@@ -149,6 +149,10 @@ Vanilla HTML, CSS, and JavaScript in a single file, roughly 67 KB with the playe
 
 ### Deploying
 
-Static site, no build step. Vercel serves the repo root as-is and `vercel.json` rewrites `/` to `draft-room.html`. `sw.js` and `draft-room.html` are sent with `Cache-Control: no-cache` so a push reaches devices instead of sitting behind the CDN; the service worker handles the actual offline caching. Pushing to `main` deploys.
+Static site, no build step. Vercel serves the repo root as-is and `vercel.json` rewrites `/` to `draft-room.html`. `sw.js` and `draft-room.html` are sent with `Cache-Control: no-cache` so a push reaches devices instead of sitting behind the CDN; the service worker handles the actual offline caching.
+
+First-time setup: go to [vercel.com/new](https://vercel.com/new), import `aaronchiuwei/DraftBoard`, and set **Framework Preset** to **Other**. Leave the build command, output directory, and install command empty — there is nothing to build, and giving it a build command is the one way to break this. Deploy.
+
+After that, every push to `main` deploys on its own, and pull requests get their own preview URLs.
 
 To change the player data, edit the embedded `PLAYERS` array near the top of the `<script>` block. Each entry is `{id, name, team, pos, espn, nffc, yahoo, bb, cons}`, where `null` means that source doesn't rank him.
