@@ -44,6 +44,7 @@ export const setSource = (source: SourceKey) => patchUi({ source });
 export const setPos = (pos: PosFilter) => patchUi({ pos });
 export const setQuery = (query: string) => patchUi({ query });
 export const setTeamTab = (team: number) => patchUi({ team });
+export const setDepthTeam = (depthTeam: string) => patchUi({ depthTeam });
 export const setCompareSort = (compareSort: CompareSort) => patchUi({ compareSort });
 export const openSheet = (sheetPlayerId: number) => patchUi({ sheetPlayerId });
 export const closeSheet = () => patchUi({ sheetPlayerId: null });
@@ -84,6 +85,66 @@ export function undoLastPick(): void {
 
 export function resetPicks(): void {
   store.set(s => ({ ...s, draft: { ...s.draft, picks: [] } }));
+}
+
+/* ---------------------------------------------------------------- queue */
+
+/**
+ * A drafted player is left in the queue rather than pulled out of it, so a
+ * mis-tap that gets put back does not also cost you the ordering you built.
+ * The queue view marks him instead, and offers to clear the taken ones.
+ */
+export function toggleQueued(playerId: number): void {
+  store.set(s =>
+    s.queue.includes(playerId)
+      ? { ...s, queue: s.queue.filter(id => id !== playerId) }
+      : { ...s, queue: [...s.queue, playerId] }
+  );
+}
+
+export function unqueuePlayer(playerId: number): void {
+  store.set(s => ({ ...s, queue: s.queue.filter(id => id !== playerId) }));
+}
+
+/** Moves a queued player one place up (-1) or down (+1). */
+export function moveInQueue(playerId: number, delta: number): void {
+  store.set(s => {
+    const from = s.queue.indexOf(playerId);
+    if (from < 0) return s;
+    const to = from + delta;
+    if (to < 0 || to >= s.queue.length) return s;
+    const queue = [...s.queue];
+    const [moved] = queue.splice(from, 1);
+    if (moved === undefined) return s;
+    queue.splice(to, 0, moved);
+    return { ...s, queue };
+  });
+}
+
+export function clearQueue(): void {
+  store.set(s => (s.queue.length === 0 ? s : { ...s, queue: [] }));
+}
+
+export function removeTakenFromQueue(): void {
+  store.set(s => {
+    const taken = new Set(s.draft.picks);
+    const queue = s.queue.filter(id => !taken.has(id));
+    return queue.length === s.queue.length ? s : { ...s, queue };
+  });
+}
+
+/* -------------------------------------------------------------- flagging */
+
+export function toggleFlagged(playerId: number): void {
+  store.set(s =>
+    s.flagged.includes(playerId)
+      ? { ...s, flagged: s.flagged.filter(id => id !== playerId) }
+      : { ...s, flagged: [...s.flagged, playerId] }
+  );
+}
+
+export function clearFlags(): void {
+  store.set(s => (s.flagged.length === 0 ? s : { ...s, flagged: [] }));
 }
 
 /* --------------------------------------------------------------- league */

@@ -82,3 +82,42 @@ export function selectComparablePlayers(state: AppState): Player[] {
 export function selectMyLineup(state: AppState) {
   return lineupFor(state.draft, selectPool(state), state.draft.league.mySlot);
 }
+
+/* --------------------------------------------------------- queue and flags */
+
+export function selectFlagged(state: AppState): Set<number> {
+  return new Set(state.flagged);
+}
+
+/** Queue position by player id, one-indexed, for the badge on a row. */
+export function selectQueuePositions(state: AppState): Map<number, number> {
+  return new Map(state.queue.map((id, i) => [id, i + 1]));
+}
+
+export interface QueueEntry {
+  player: Player;
+  /** One-indexed place in the queue. */
+  place: number;
+  taken: boolean;
+}
+
+/**
+ * The queue in order, with ids the pool no longer carries dropped so a stale
+ * entry cannot render a blank row.
+ */
+export function selectQueue(state: AppState): QueueEntry[] {
+  const pool = selectPool(state);
+  const taken = draftedIds(state.draft);
+  const out: QueueEntry[] = [];
+
+  state.queue.forEach((id, i) => {
+    const player = pool.byId.get(id);
+    if (player) out.push({ player, place: i + 1, taken: taken.has(id) });
+  });
+  return out;
+}
+
+/** Highest-queued player still on the board, for the nudge in the clock strip. */
+export function selectNextInQueue(state: AppState): Player | null {
+  return selectQueue(state).find(e => !e.taken)?.player ?? null;
+}

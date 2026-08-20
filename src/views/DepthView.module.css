@@ -1,0 +1,209 @@
+.picker {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 10px 12px;
+  position: sticky;
+  top: 0;
+  background: var(--ink);
+  z-index: 10;
+  border-bottom: 1px solid var(--line);
+}
+
+.picker::-webkit-scrollbar {
+  display: none;
+}
+
+.picker button {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  font-family: var(--num);
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.picker button.on {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #10141b;
+}
+
+.teamHead {
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.teamName {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* Depth charts move. Saying when this one was pulled is the honest thing. */
+.stamp {
+  font-size: 10px;
+  color: var(--dim);
+  margin-top: 3px;
+  font-family: var(--num);
+}
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 7px;
+}
+
+.groupPos {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  border-radius: 4px;
+  color: #10141b;
+}
+
+.groupRule {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(46, 56, 70, 0.55);
+  min-height: 48px;
+}
+
+.open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0 7px 12px;
+  text-align: left;
+}
+
+button.open:active {
+  background: var(--raised);
+}
+
+.gone {
+  opacity: 0.32;
+}
+
+.gone .name {
+  text-decoration: line-through;
+  text-decoration-color: var(--dim);
+}
+
+/* Not in the player pool: on the chart, but not a draftable name here. */
+.unranked .name {
+  color: var(--dim);
+  font-weight: 500;
+}
+
+.flagged {
+  background: rgba(255, 176, 32, 0.07);
+  box-shadow: inset 2px 0 0 var(--amber);
+}
+
+.slot {
+  flex: 0 0 18px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dim);
+  text-align: right;
+}
+
+.starter {
+  color: var(--amber);
+}
+
+.mid {
+  flex: 1;
+  min-width: 0;
+}
+
+.nameLine {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tag {
+  flex: 0 0 auto;
+  font-family: var(--num);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 3px;
+}
+
+.hurt {
+  color: var(--QB);
+  border-color: rgba(255, 107, 107, 0.45);
+}
+
+.queueChip {
+  flex: 0 0 auto;
+  font-family: var(--num);
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--amber);
+  border: 1px solid var(--amber-dim);
+  border-radius: 3px;
+  padding: 1px 3px;
+}
+
+.sub {
+  display: block;
+  font-size: 10px;
+  color: var(--dim);
+  margin-top: 1px;
+  font-family: var(--num);
+}
+
+.rank {
+  flex: 0 0 auto;
+  text-align: right;
+  padding-left: 6px;
+}
+
+.rank b {
+  display: block;
+  font-family: var(--num);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rankLabel {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 700;
+}

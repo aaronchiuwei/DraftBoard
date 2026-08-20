@@ -18,6 +18,7 @@ npm run dev        # dev server with hot reload
 npm test           # unit and integration tests
 npm run build      # typecheck, then build to dist/
 npm run preview    # serve the built output
+npm run depth      # re-pull every team's depth chart from ESPN
 ```
 
 `npm run build` runs `tsc --noEmit` first, so a type error fails the build rather than shipping.
@@ -43,7 +44,9 @@ src/
   types.ts             shared model: Player, RankSource, LeagueSettings, DraftState
   data/
     players.2026.json  the player pool, one record per player
+    depth.2026.json    every team's ESPN depth chart, refreshed by a script
     pool.ts            validates the JSON at boot, merges imported ranks
+    depth.ts           validates the charts, ties each name to a pool player
     sources.ts         built-in rank source registry
     import.ts          parses and name-matches a pasted ranking
   domain/              pure functions, no DOM, no store
@@ -54,10 +57,12 @@ src/
   state/
     store.ts           minimal subscribe/notify store plus a Preact hook
     app.ts             the store instance and every action
-    selectors.ts       derived reads: visible players, active sources
-    persistence.ts     localStorage, schema versioning, v1 migration
-  components/          Clock, Tabs, Controls, PlayerRow, Rail, PlayerSheet
-  views/               Players, Compare, Board, Teams, Setup, SourcesPanel
+    selectors.ts       derived reads: visible players, the queue, active sources
+    persistence.ts     localStorage, schema versioning, v1 and v2 migration
+  components/          Clock, Tabs, Controls, PlayerRow, Rail, StarButton, PlayerSheet
+  views/               Players, Queue, Compare, Board, Teams, Depth, Setup, SourcesPanel
+scripts/
+  fetch-depth.mjs      rebuilds depth.2026.json from ESPN
 ```
 
 Three decisions carry most of the weight.
@@ -85,17 +90,58 @@ Tap a player → a sheet shows every source's rank, the odds he lasts to your ne
 
 **Players** — the main list, sorted by any source or by AVG. Filter by position, including a FLEX chip for RB + WR + TE. Within a single position the list is split into tiers.
 
+**Queue** — the players you want, in your order. See below.
+
 **Compare** — every source side by side. Green marks the source highest on a player, red the lowest, and Gap is the distance between them. Sort by disagreement or overall.
 
 **Board** — the full snake grid, your team in amber, auto-scrolled to the current pick. Picks that landed well off consensus are marked green or red.
 
 **Teams** — any team's roster slotted into the starting lineup, bench below.
 
+**Depth** — ESPN's depth chart for all 32 NFL teams. See below.
+
 **Setup** — league settings, ranking sources, and reset.
 
 ### Reading the rail
 
 Every player row ends with one dot per source on a short axis. Centre is that player's consensus. **Left of centre means that source is higher on him.** A tight cluster is agreement; a spread-out rail is a fight. It's there so you can spot a contested player while scrolling.
+
+---
+
+## The queue and the star
+
+Two ways to mark a player, for two different purposes.
+
+**The queue is a plan.** Tap a player → **Add to queue**. He goes on the end, and the Queue tab reorders with the arrows. The row in the players list picks up a `Q3` chip so you can see where he sits without leaving the tab, and the clock strip carries a chip for the highest queued player still on the board — tap it to go straight to his sheet.
+
+A player who gets drafted is **left in the queue rather than pulled out of it**, struck through and stamped with the pick he went at. Auto-removing would mean a mis-tap that you then put back also costs you the ordering you built. **Clear N gone** drops them once you're sure, and **Clear all** empties the queue.
+
+The queue survives **Reset draft**, like imported rankings do. Running a mock shouldn't cost you your prep.
+
+**The star is a highlight.** The ☆ at the right of a row in Players or Depth toggles it in one tap, and the player sheet has the same control. A flagged player gets an amber left edge and a tinted row everywhere he appears, including the queue, so a name you're watching is findable while scrolling past sixty rows. There's no ordering to it and it means whatever you want it to mean.
+
+Both are per-device, saved with everything else, and independent of each other.
+
+---
+
+## Depth charts
+
+The **Depth** tab has ESPN's chart for all 32 teams: quarterbacks, backs, receivers, tight ends, and the kicker, in ESPN's order, with jersey numbers and injury tags (`Q`, `OUT`, `IR`, `PS`).
+
+Each name is matched against the player pool, so a charted player carries his rank under whichever source you're reading, strikes through once he's drafted, and opens the same sheet as anywhere else — you can draft straight off a chart. Names the pool doesn't carry (most of a 90-man roster) stay listed in grey, since the point of a depth chart is seeing who is behind whom.
+
+Matching is by name and deliberately **not** gated on team, because the chart is fresher than the pool: a back ESPN lists in Kansas City may still be filed under Seattle here, and dropping him would hide the most interesting row on the page. The team only breaks a tie between two men with the same name.
+
+### Refreshing them
+
+Charts are **baked into the bundle**, not fetched at runtime, for the same reason the player pool is: the one moment you want this data is the moment you can't rely on the network. ESPN's roster endpoint also sends no CORS header, so a browser couldn't resolve athlete names on its own even with a connection.
+
+```bash
+npm run depth              # current season
+npm run depth -- --season 2027
+```
+
+Two requests per team — the chart gives an ordered list of athlete ids, the roster turns those into names — then it writes `src/data/depth.2026.json` and prints a per-team count. Commit the result. The tab shows the pull date under the team name, because **a depth chart from three weeks ago is a guess**. Re-run it the morning of the draft.
 
 ---
 
@@ -168,7 +214,7 @@ Everything lives in `localStorage` on the device you're drafting on. There is no
 
 On first load the app calls `navigator.storage.persist()`. Without it, browsers may evict a site's `localStorage` under storage pressure, and Safari clears it after seven days of not visiting. A granted persist exempts the origin from both, and installing to the home screen is what gets it granted.
 
-Saved state is schema-versioned. A draft saved by the original single-file version is migrated on first load rather than lost, and there's a test covering that.
+Saved state is schema-versioned, and the queue, the flags, and your last depth-chart team are saved along with the picks. A draft saved by the original single-file version, or by any version before the queue existed, is migrated on first load rather than lost, and there are tests covering both.
 
 ### Offline
 
@@ -178,11 +224,11 @@ Saved state is schema-versioned. A draft saved by the original single-file versi
 
 ## Testing
 
-67 tests, no browser required.
+84 tests, no browser required.
 
 - `src/domain/*.test.ts` — snake order, lineup slotting, consensus, spread, rail geometry.
 - `src/data/import.test.ts` — ranking parsers and name matching, including ambiguity and duplicates.
-- `src/App.test.tsx` — the app rendered into a real DOM and driven through drafting, undo, put-back, search, every tab, importing a source, muting a source, reset, reload persistence, and the v1 migration.
+- `src/App.test.tsx` — the app rendered into a real DOM and driven through drafting, undo, put-back, search, every tab, queueing and reordering, flagging, reading and drafting off a depth chart, importing a source, muting a source, reset, reload persistence, and the v1 and v2 migrations.
 
 ---
 
@@ -190,6 +236,9 @@ Saved state is schema-versioned. A draft saved by the original single-file versi
 
 - **No kickers or defenses on the Big Board**, so sorting by BIG in those positions returns nothing. Use another source.
 - **Ranks are a snapshot.** Pulled August 2026. Import a fresher ADP if something moved.
+- **Depth charts are a snapshot too**, and a faster-moving one. Run `npm run depth` and redeploy before draft day. There is no in-app refresh, because there is no backend to proxy ESPN through.
+- **Depth charts cover the offense and the kicker only.** Offensive line, defense, and punt returners are dropped; nothing in this draft turns on the left guard.
+- **The queue has no drag handle.** Reordering is the arrows, which is slower for a long list but does not misfire on a phone mid-draft.
 - **No trades, keepers, or auction.** Straight snake only.
 - **One draft at a time**, on **one device**. The board is not shared or synced.
 - **The roster shape is configurable in the data model but not yet in the UI.** `LeagueSettings.roster` is read everywhere it matters; Setup just doesn't expose an editor for it yet.

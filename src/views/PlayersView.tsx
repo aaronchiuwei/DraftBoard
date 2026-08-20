@@ -5,7 +5,13 @@ import { PlayerRow, TierDivider } from '../components/PlayerRow';
 import { tierMap } from '../domain/analytics';
 import { draftedIds } from '../domain/draft';
 import { openSheet } from '../state/app';
-import { selectSourceIds, selectSources, selectVisiblePlayers } from '../state/selectors';
+import {
+  selectFlagged,
+  selectQueuePositions,
+  selectSourceIds,
+  selectSources,
+  selectVisiblePlayers
+} from '../state/selectors';
 
 /** Tier bands only mean something within one position and one opinion. */
 function shouldShowTiers(state: AppState): boolean {
@@ -17,6 +23,8 @@ export function PlayersView({ state }: { state: AppState }) {
   const sources = selectSources(state);
   const sourceIds = selectSourceIds(state);
   const taken = draftedIds(state.draft);
+  const flagged = selectFlagged(state);
+  const queuePlaces = selectQueuePositions(state);
   const tiers = shouldShowTiers(state)
     ? tierMap(players, state.ui.source, sourceIds)
     : new Map<number, number>();
@@ -44,6 +52,8 @@ export function PlayersView({ state }: { state: AppState }) {
         sourceIds={sourceIds}
         selected={state.ui.source}
         gone={taken.has(player.id)}
+        flagged={flagged.has(player.id)}
+        queuePlace={queuePlaces.get(player.id)}
         onSelect={openSheet}
       />
     );

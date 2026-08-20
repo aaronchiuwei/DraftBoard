@@ -4,9 +4,11 @@ import { Clock } from './components/Clock';
 import { Tabs } from './components/Tabs';
 import { PlayerSheet } from './components/PlayerSheet';
 import { PlayersView } from './views/PlayersView';
+import { QueueView } from './views/QueueView';
 import { CompareView } from './views/CompareView';
 import { BoardView } from './views/BoardView';
 import { TeamsView } from './views/TeamsView';
+import { DepthView } from './views/DepthView';
 import { SetupView } from './views/SetupView';
 import { setView, useApp } from './state/app';
 import styles from './App.module.css';
@@ -30,9 +32,11 @@ export function App() {
       <Clock state={state} />
       <div class={styles.main} ref={main}>
         {view === 'players' && <PlayersView state={state} />}
+        {view === 'queue' && <QueueView state={state} />}
         {view === 'compare' && <CompareView state={state} />}
         {view === 'board' && <BoardView state={state} />}
         {view === 'teams' && <TeamsView state={state} />}
+        {view === 'depth' && <DepthView state={state} />}
         {view === 'setup' && <SetupView state={state} />}
       </div>
       <Tabs current={view} onChange={onTab} />

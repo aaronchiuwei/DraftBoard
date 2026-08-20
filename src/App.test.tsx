@@ -51,6 +51,18 @@ function row(name: string) {
   return screen.getByText(name).closest('button');
 }
 
+/** The full row element, including the controls sitting outside the tap target. */
+function rowBox(name: string) {
+  return screen.getByText(name).closest('div[class~="row"]');
+}
+
+/** Player names in the order the current list renders them. */
+function listedNames() {
+  return [...document.querySelectorAll('div[class~="row"] span[class~="name"]')].map(
+    el => el.textContent
+  );
+}
+
 /** Boots into a started 12-team draft. */
 async function startDraft() {
   freshStorage();
@@ -62,6 +74,13 @@ async function startDraft() {
 function draft(name: string) {
   click(row(name));
   click(button('Draft'));
+}
+
+/** Queues a player from whatever list is showing, leaving the sheet closed. */
+function enqueue(name: string) {
+  click(row(name));
+  click(button('Add to queue'));
+  click(button('Cancel'));
 }
 
 beforeEach(() => {
@@ -255,6 +274,176 @@ describe('reset', () => {
   });
 });
 
+describe('queue', () => {
+  it('explains itself before anything is queued', async () => {
+    await startDraft();
+    click(button('Queue'));
+    expect(screen.getByText(/Nothing queued yet/)).toBeTruthy();
+  });
+
+  it('queues a player and counts him as available', async () => {
+    await startDraft();
+    click(row('Jahmyr Gibbs'));
+    click(button('Add to queue'));
+    // the sheet stays open so the mark can be undone in place
+    expect(button('Queued #1')).toBeTruthy();
+    click(button('Cancel'));
+
+    // the players list shows his place without leaving the tab
+    expect(screen.getByText('Q1')).toBeTruthy();
+
+    click(button('Queue'));
+    expect(screen.getByText('1 available')).toBeTruthy();
+    expect(screen.getByText('Jahmyr Gibbs')).toBeTruthy();
+  });
+
+  it('reorders with the arrows', async () => {
+    await startDraft();
+    enqueue('Jahmyr Gibbs');
+    enqueue('Bijan Robinson');
+
+    click(button('Queue'));
+    expect(listedNames()).toEqual(['Jahmyr Gibbs', 'Bijan Robinson']);
+
+    click(button('Move Jahmyr Gibbs down'));
+    expect(listedNames()).toEqual(['Bijan Robinson', 'Jahmyr Gibbs']);
+
+    click(button('Move Jahmyr Gibbs up'));
+    expect(listedNames()).toEqual(['Jahmyr Gibbs', 'Bijan Robinson']);
+  });
+
+  it('removes a player from the queue', async () => {
+    await startDraft();
+    enqueue('Jahmyr Gibbs');
+    click(button('Queue'));
+    click(button('Remove Jahmyr Gibbs from queue'));
+    expect(screen.getByText(/Nothing queued yet/)).toBeTruthy();
+  });
+
+  it('keeps a taken player in place until you clear him', async () => {
+    await startDraft();
+    enqueue('Jahmyr Gibbs');
+    enqueue('Bijan Robinson');
+    draft('Jahmyr Gibbs');
+
+    click(button('Queue'));
+    // he stays where he was, so putting him back does not cost the ordering
+    expect(listedNames()).toEqual(['Jahmyr Gibbs', 'Bijan Robinson']);
+    expect(screen.getByText(/gone 1\.01/)).toBeTruthy();
+    expect(screen.getByText('1 available · 1 gone')).toBeTruthy();
+
+    click(button('Clear 1 gone'));
+    expect(listedNames()).toEqual(['Bijan Robinson']);
+  });
+
+  it('surfaces the top of the queue on the clock strip', async () => {
+    await startDraft();
+    enqueue('Bijan Robinson');
+    expect(button('Queue · Bijan Robinson')).toBeTruthy();
+
+    // once he is gone the chip moves on to the next man standing
+    enqueue('Jahmyr Gibbs');
+    draft('Bijan Robinson');
+    expect(button('Queue · Jahmyr Gibbs')).toBeTruthy();
+  });
+
+  it('survives a reset of the draft', async () => {
+    await startDraft();
+    enqueue('Jahmyr Gibbs');
+    click(button('Setup'));
+    click(button('Reset draft'));
+    click(button('Tap again to erase every pick'));
+
+    click(button('Queue'));
+    expect(screen.getByText('Jahmyr Gibbs')).toBeTruthy();
+  });
+});
+
+describe('flagging', () => {
+  it('flags a player from the list and unflags him again', async () => {
+    await startDraft();
+    click(button('Flag Jahmyr Gibbs'));
+    expect(rowBox('Jahmyr Gibbs')?.className).toContain('flagged');
+
+    click(button('Unflag Jahmyr Gibbs'));
+    expect(rowBox('Jahmyr Gibbs')?.className).not.toContain('flagged');
+  });
+
+  it('flags from the player sheet too', async () => {
+    await startDraft();
+    click(row('Bijan Robinson'));
+    click(button('☆ Flag'));
+    expect(button('★ Flagged')).toBeTruthy();
+    click(button('Cancel'));
+    expect(rowBox('Bijan Robinson')?.className).toContain('flagged');
+  });
+
+  it('carries the flag onto the depth chart', async () => {
+    await startDraft();
+    click(button('Flag Patrick Mahomes'));
+
+    click(button('Depth'));
+    click(button('KC'));
+    expect(rowBox('Patrick Mahomes')?.className).toContain('flagged');
+  });
+});
+
+describe('depth charts', () => {
+  it('opens on a team and switches to another', async () => {
+    await startDraft();
+    click(button('Depth'));
+    expect(screen.getByText('Arizona Cardinals')).toBeTruthy();
+
+    click(button('KC'));
+    expect(screen.getByText('Kansas City Chiefs')).toBeTruthy();
+    expect(screen.getByText('Patrick Mahomes')).toBeTruthy();
+    expect(screen.getByText('Travis Kelce')).toBeTruthy();
+  });
+
+  it('lists a position in ESPN order', async () => {
+    await startDraft();
+    click(button('Depth'));
+    click(button('DET'));
+    const names = listedNames();
+    const goff = names.indexOf('Jared Goff');
+    const gibbs = names.indexOf('Jahmyr Gibbs');
+    expect(goff).toBeGreaterThan(-1);
+    // quarterbacks are charted before running backs, and the starter leads
+    expect(goff).toBeLessThan(gibbs);
+    expect(names.indexOf('Amon-Ra St. Brown')).toBeGreaterThan(gibbs);
+  });
+
+  it('marks a charted player who is already drafted', async () => {
+    await startDraft();
+    draft('Travis Kelce');
+
+    click(button('Depth'));
+    click(button('KC'));
+    expect(rowBox('Travis Kelce')?.className).toContain('gone');
+  });
+
+  it('drafts straight off the chart', async () => {
+    await startDraft();
+    click(button('Depth'));
+    click(button('KC'));
+    click(row('Rashee Rice'));
+    click(button('Draft'));
+
+    expect(screen.getByText('1.02')).toBeTruthy();
+    click(button('Teams'));
+    expect(screen.getByText('Rashee Rice')).toBeTruthy();
+  });
+
+  it('remembers the team between visits', async () => {
+    await startDraft();
+    click(button('Depth'));
+    click(button('KC'));
+    click(button('Players'));
+    click(button('Depth'));
+    expect(screen.getByText('Kansas City Chiefs')).toBeTruthy();
+  });
+});
+
 describe('persistence', () => {
   it('restores a draft in progress from storage', async () => {
     freshStorage();
@@ -265,6 +454,65 @@ describe('persistence', () => {
     await remountApp();
     expect(screen.getByText('1.02')).toBeTruthy();
     expect(screen.getByText('Team 2')).toBeTruthy();
+  });
+
+  it('restores the queue, the flags, and the depth chart team', async () => {
+    freshStorage();
+    await mountApp();
+    click(button('Start draft'));
+    enqueue('Jahmyr Gibbs');
+    click(button('Flag Bijan Robinson'));
+    click(button('Depth'));
+    click(button('KC'));
+
+    await remountApp();
+    expect(screen.getByText('Kansas City Chiefs')).toBeTruthy();
+
+    click(button('Queue'));
+    expect(screen.getByText('Jahmyr Gibbs')).toBeTruthy();
+
+    click(button('Players'));
+    expect(rowBox('Bijan Robinson')?.className).toContain('flagged');
+  });
+
+  it('loads a draft saved before the queue existed', async () => {
+    freshStorage({
+      'draftroom.v2': JSON.stringify({
+        schema: 2,
+        draft: {
+          ready: true,
+          league: {
+            teams: 12,
+            rounds: 16,
+            mySlot: 0,
+            names: [],
+            roster: [
+              { key: 'QB', count: 1, accepts: ['QB'] },
+              { key: 'RB', count: 2, accepts: ['RB'] }
+            ]
+          },
+          picks: [1]
+        },
+        imported: [],
+        disabledSources: [],
+        ui: {
+          view: 'players',
+          source: 'nffc',
+          pos: 'ALL',
+          hideDrafted: true,
+          compareSort: 'spread',
+          team: 0
+        }
+      })
+    });
+    await mountApp();
+
+    // the in-progress draft is kept, and the new fields start empty
+    expect(screen.getByText('1.02')).toBeTruthy();
+    click(button('Queue'));
+    expect(screen.getByText(/Nothing queued yet/)).toBeTruthy();
+    click(button('Depth'));
+    expect(screen.getByText('Arizona Cardinals')).toBeTruthy();
   });
 
   it('migrates a draft saved by the original single-file version', async () => {

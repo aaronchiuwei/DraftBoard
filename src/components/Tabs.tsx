@@ -3,9 +3,11 @@ import styles from './Tabs.module.css';
 
 const TABS: { id: ViewId; label: string }[] = [
   { id: 'players', label: 'Players' },
+  { id: 'queue', label: 'Queue' },
   { id: 'compare', label: 'Compare' },
   { id: 'board', label: 'Board' },
   { id: 'teams', label: 'Teams' },
+  { id: 'depth', label: 'Depth' },
   { id: 'setup', label: 'Setup' }
 ];
 

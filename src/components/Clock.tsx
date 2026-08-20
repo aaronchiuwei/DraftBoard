@@ -2,8 +2,8 @@ import type { AppState } from '../types';
 import { isDraftOver, picksUntilTurn, pickLabel, teamName, totalPicks } from '../domain/draft';
 import { formatGaps, gapsOf, lineupFor } from '../domain/roster';
 import { positionalRuns } from '../domain/analytics';
-import { selectPool, selectTeamOnClock } from '../state/selectors';
-import { undoLastPick } from '../state/app';
+import { selectNextInQueue, selectPool, selectTeamOnClock } from '../state/selectors';
+import { openSheet, undoLastPick } from '../state/app';
 import styles from './Clock.module.css';
 
 export function Clock({ state }: { state: AppState }) {
@@ -31,7 +31,10 @@ export function Clock({ state }: { state: AppState }) {
 
   const untilMyTurn = draft.ready ? picksUntilTurn(draft.league.mySlot, pickIndex, draft.league) : null;
   const runs = draft.ready ? positionalRuns(draft, pool).filter(r => r.hot).slice(0, 3) : [];
-  const showSignals = draft.ready && !isDraftOver(draft) && (untilMyTurn !== null || runs.length > 0);
+  // the top of the queue is the one thing you want without changing tabs
+  const nextUp = draft.ready && !isDraftOver(draft) ? selectNextInQueue(state) : null;
+  const showSignals =
+    draft.ready && !isDraftOver(draft) && (untilMyTurn !== null || runs.length > 0 || nextUp);
 
   return (
     <div class={styles.clock}>
@@ -56,6 +59,14 @@ export function Clock({ state }: { state: AppState }) {
             <span class={styles.chip}>
               {untilMyTurn === 0 ? "You're up" : `You pick in ${untilMyTurn}`}
             </span>
+          )}
+          {nextUp && (
+            <button
+              class={`${styles.chip} ${styles.queued}`}
+              onClick={() => openSheet(nextUp.id)}
+            >
+              Queue · {nextUp.name}
+            </button>
           )}
           {runs.map(run => (
             <span key={run.pos} class={`${styles.chip} ${styles.run}`}>

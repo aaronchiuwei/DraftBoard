@@ -1,0 +1,16 @@
+.star {
+  flex: 0 0 34px;
+  align-self: stretch;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--dim);
+  padding: 0 8px 0 2px;
+}
+
+.star:active {
+  color: var(--amber-dim);
+}
+
+.star.on {
+  color: var(--amber);
+}

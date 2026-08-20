@@ -98,3 +98,12 @@
   color: var(--amber);
   background: rgba(255, 176, 32, 0.1);
 }
+
+/* A name is not a label, so this chip keeps its own casing. */
+.queued {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+  color: var(--text);
+  border-color: var(--amber-dim);
+}

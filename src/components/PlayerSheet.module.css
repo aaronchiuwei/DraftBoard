@@ -109,6 +109,28 @@
   color: var(--amber);
 }
 
+.marks {
+  display: flex;
+  gap: 9px;
+  margin-bottom: 9px;
+}
+
+.marks button {
+  flex: 1;
+  padding: 11px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.marks button.markOn {
+  border-color: var(--amber-dim);
+  color: var(--amber);
+}
+
 .buttons {
   display: flex;
   gap: 9px;

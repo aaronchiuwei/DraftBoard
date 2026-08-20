@@ -1,20 +1,33 @@
 import type { AppState, DraftState, ImportedSource, UiState } from '../types';
 import { DEFAULT_ROSTER, normalizeLeague } from '../domain/roster';
 import { defaultTeamNames } from '../domain/draft';
+import { DEFAULT_DEPTH_TEAM } from '../data/depth';
 
 const KEY = 'draftroom.v2';
 const LEGACY_KEY = 'draftroom.v1';
-const SCHEMA = 2;
+const SCHEMA = 3;
+/** v3 only adds fields, so a v2 entry still loads; the extras default to empty. */
+const READABLE_SCHEMAS = [2, 3];
 
 /** UI choices worth remembering between sessions. Search text and the open sheet are not. */
-type PersistedUi = Pick<UiState, 'view' | 'source' | 'pos' | 'hideDrafted' | 'compareSort' | 'team'>;
+type PersistedUi = Pick<
+  UiState,
+  'view' | 'source' | 'pos' | 'hideDrafted' | 'compareSort' | 'team' | 'depthTeam'
+>;
 
-interface PersistedV2 {
-  schema: 2;
+interface Persisted {
+  schema: number;
   draft: DraftState;
   imported: ImportedSource[];
   disabledSources: string[];
   ui: PersistedUi;
+  /** Added in v3. */
+  queue?: number[];
+  flagged?: number[];
+}
+
+function numberList(value: unknown): number[] {
+  return Array.isArray(value) ? value.filter((n): n is number => typeof n === 'number') : [];
 }
 
 /** Shape written by the original single-file version. */
@@ -68,6 +81,7 @@ export function defaultUi(): UiState {
     hideDrafted: true,
     query: '',
     team: 0,
+    depthTeam: DEFAULT_DEPTH_TEAM,
     compareSort: 'spread',
     sheetPlayerId: null
   };
@@ -95,19 +109,23 @@ export function loadState(): AppState {
     draft: defaultDraft(),
     ui: defaultUi(),
     imported: [],
-    disabledSources: []
+    disabledSources: [],
+    queue: [],
+    flagged: []
   };
 
   const raw = readRaw(KEY);
   if (raw) {
     try {
-      const parsed = JSON.parse(raw) as PersistedV2;
-      if (parsed.schema === SCHEMA && parsed.draft) {
+      const parsed = JSON.parse(raw) as Persisted;
+      if (READABLE_SCHEMAS.includes(parsed.schema) && parsed.draft) {
         return {
           draft: { ...parsed.draft, league: normalizeLeague(parsed.draft.league) },
           ui: { ...base.ui, ...parsed.ui, query: '', sheetPlayerId: null },
           imported: Array.isArray(parsed.imported) ? parsed.imported : [],
-          disabledSources: Array.isArray(parsed.disabledSources) ? parsed.disabledSources : []
+          disabledSources: Array.isArray(parsed.disabledSources) ? parsed.disabledSources : [],
+          queue: numberList(parsed.queue),
+          flagged: numberList(parsed.flagged)
         };
       }
     } catch {
@@ -132,18 +150,21 @@ export function loadState(): AppState {
 }
 
 export function saveState(state: AppState): void {
-  const payload: PersistedV2 = {
+  const payload: Persisted = {
     schema: SCHEMA,
     draft: state.draft,
     imported: state.imported,
     disabledSources: state.disabledSources,
+    queue: state.queue,
+    flagged: state.flagged,
     ui: {
       view: state.ui.view,
       source: state.ui.source,
       pos: state.ui.pos,
       hideDrafted: state.ui.hideDrafted,
       compareSort: state.ui.compareSort,
-      team: state.ui.team
+      team: state.ui.team,
+      depthTeam: state.ui.depthTeam
     }
   };
   writeRaw(KEY, JSON.stringify(payload));

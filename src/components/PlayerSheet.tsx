@@ -3,7 +3,7 @@ import { isDraftOver, pickLabel, teamAtPick, teamName } from '../domain/draft';
 import { rankOf } from '../domain/rankings';
 import { survivalOdds } from '../domain/analytics';
 import { selectHorizon, selectPool, selectSourceIds, selectSources } from '../state/selectors';
-import { closeSheet, draftPlayer, undraftPlayer } from '../state/app';
+import { closeSheet, draftPlayer, toggleFlagged, toggleQueued, undraftPlayer } from '../state/app';
 import styles from './PlayerSheet.module.css';
 
 export function PlayerSheet({ state }: { state: AppState }) {
@@ -21,6 +21,8 @@ export function PlayerSheet({ state }: { state: AppState }) {
   const taken = takenAt >= 0;
   const over = isDraftOver(draft);
   const onClock = draft.picks.length;
+  const queuePlace = state.queue.indexOf(id);
+  const flagged = state.flagged.includes(id);
 
   const odds =
     !taken && draft.ready && !over
@@ -81,6 +83,20 @@ export function PlayerSheet({ state }: { state: AppState }) {
               <b>{teamName(draft.league, teamAtPick(onClock, draft.league.teams))}</b>
             </>
           )}
+        </div>
+
+        {/* Marking a player is a decision about later, so it stays out of the
+            row of buttons that act on this pick and does not close the sheet. */}
+        <div class={styles.marks}>
+          <button
+            class={queuePlace >= 0 ? styles.markOn : undefined}
+            onClick={() => toggleQueued(id)}
+          >
+            {queuePlace >= 0 ? `Queued #${queuePlace + 1}` : 'Add to queue'}
+          </button>
+          <button class={flagged ? styles.markOn : undefined} onClick={() => toggleFlagged(id)}>
+            {flagged ? '★ Flagged' : '☆ Flag'}
+          </button>
         </div>
 
         <div class={styles.buttons}>

@@ -1,12 +1,39 @@
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 12px 9px;
+  position: sticky;
+  top: 0;
+  background: var(--ink);
+  border-bottom: 1px solid var(--line);
+  z-index: 10;
+}
+
+.headButtons {
+  display: flex;
+  gap: 6px;
+}
+
+.headButtons button {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
 .row {
   display: flex;
   align-items: stretch;
   border-bottom: 1px solid rgba(46, 56, 70, 0.55);
-  width: 100%;
   min-height: 56px;
 }
 
-/* The whole row opens the sheet; only the star is carved out of that target. */
 .open {
   flex: 1;
   min-width: 0;
@@ -21,30 +48,26 @@
   background: var(--raised);
 }
 
-.gone {
-  opacity: 0.3;
+.taken {
+  opacity: 0.42;
 }
 
-.gone .name {
+.taken .name {
   text-decoration: line-through;
   text-decoration-color: var(--dim);
 }
 
-/* A flagged player has to be findable while scrolling past sixty rows. */
 .flagged {
   background: rgba(255, 176, 32, 0.07);
   box-shadow: inset 2px 0 0 var(--amber);
 }
 
-.rank {
-  font-family: var(--num);
-  font-size: 15px;
+.place {
+  flex: 0 0 22px;
+  font-size: 13px;
   font-weight: 700;
-  width: 34px;
-  flex: 0 0 34px;
+  color: var(--amber);
   text-align: right;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .pos {
@@ -66,7 +89,7 @@
 .nameLine {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -79,19 +102,14 @@
   text-overflow: ellipsis;
 }
 
-.queueChip {
+.star {
   flex: 0 0 auto;
-  font-family: var(--num);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
   color: var(--amber);
-  border: 1px solid var(--amber-dim);
-  border-radius: 3px;
-  padding: 1px 3px;
+  font-size: 11px;
 }
 
 .sub {
+  display: block;
   font-size: 11px;
   color: var(--dim);
   margin-top: 1px;
@@ -101,31 +119,28 @@
   text-overflow: ellipsis;
 }
 
-.sub b {
-  color: var(--muted);
-  font-weight: 600;
-}
-
-/* The last player before a talent cliff is the one worth reaching for. */
-.tierBreak {
-  border-bottom: 1px solid var(--amber-dim);
-}
-
-.tierTag {
+.controls {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px 6px;
-  background: var(--ink);
-  border-bottom: 1px solid rgba(46, 56, 70, 0.55);
+  align-items: stretch;
+  flex: 0 0 auto;
 }
 
-.tierTag span {
-  color: var(--amber);
+.controls button {
+  width: 34px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--muted);
 }
 
-.tierRule {
-  flex: 1;
-  height: 1px;
-  background: var(--line);
+.controls button:active {
+  background: var(--raised);
+}
+
+.controls button:disabled {
+  opacity: 0.22;
+}
+
+.remove {
+  color: var(--dim);
+  padding-right: 4px;
 }

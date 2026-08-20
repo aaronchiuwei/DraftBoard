@@ -65,7 +65,7 @@ export interface ImportedSource {
 }
 
 export type PosFilter = Pos | 'ALL' | 'FLEX';
-export type ViewId = 'players' | 'compare' | 'board' | 'teams' | 'setup';
+export type ViewId = 'players' | 'queue' | 'compare' | 'board' | 'teams' | 'depth' | 'setup';
 export type CompareSort = 'spread' | 'cons';
 
 export interface UiState {
@@ -76,6 +76,8 @@ export interface UiState {
   query: string;
   /** Which team's roster the Teams tab is showing. */
   team: number;
+  /** NFL team code whose depth chart the Depth tab is showing. */
+  depthTeam: string;
   compareSort: CompareSort;
   sheetPlayerId: number | null;
 }
@@ -86,4 +88,11 @@ export interface AppState {
   imported: ImportedSource[];
   /** Source ids the user has switched off; they stop counting toward consensus. */
   disabledSources: string[];
+  /**
+   * Player ids in the order you want them, highest first. Independent of the
+   * draft: a reset wipes picks but keeps the prep work.
+   */
+  queue: number[];
+  /** Player ids marked to stand out in every list. Order is not meaningful. */
+  flagged: number[];
 }
