@@ -1,0 +1,133 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 10px 11px;
+}
+
+.off {
+  opacity: 0.45;
+}
+
+.swatch {
+  flex: 0 0 8px;
+  height: 24px;
+  border-radius: 2px;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.detail {
+  font-size: 11px;
+  color: var(--dim);
+  margin-top: 2px;
+}
+
+.action {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 9px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--raised);
+}
+
+.remove {
+  color: var(--QB);
+}
+
+.importBox {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.importBox input[type='text'],
+.importBox textarea {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 10px 11px;
+  font-size: 14px;
+}
+
+.importBox textarea {
+  min-height: 132px;
+  font-family: var(--num);
+  font-size: 12px;
+  resize: vertical;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.row button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 7px;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.go {
+  background: var(--amber);
+  color: #10141b;
+}
+
+.go:disabled {
+  opacity: 0.4;
+}
+
+.ghost {
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--raised);
+  font-weight: 700;
+}
+
+.result {
+  border-radius: 7px;
+  padding: 11px 12px;
+  font-size: 12px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.result b {
+  color: var(--text);
+}
+
+.result ul {
+  margin: 7px 0 0;
+  padding-left: 17px;
+  color: var(--dim);
+}
+
+.error {
+  border-color: var(--QB);
+  color: var(--QB);
+}

@@ -2,24 +2,25 @@
 
 An offline-first draft tracker for a live, in-person PPR fantasy football draft.
 
-One HTML file. No install, no build step, no server, no accounts. Open it on your phone, tap names as they come off the board, and it keeps the picks, the board, and every roster in sync.
+Open it on your phone, tap names as they come off the board, and it keeps the picks, the board, and every roster in sync. It works with no connection and needs no account.
 
 Built for a specific league: **1 QB, 2 RB, 2 WR, 1 TE, 2 FLEX, 1 DEF, 1 K**, snake order.
 
-Deployed as a static site on Vercel. It can also still be opened straight off disk as a local file.
+Preact + TypeScript, built with Vite, deployed as a static site on Vercel.
 
 ---
 
-## Files
+## Running it
 
-| File | What it is |
-|---|---|
-| `draft-room.html` | The entire app. Player data is embedded — this is the only file you need to run it locally. |
-| `sw.js` | Service worker. Caches the app so it opens with no connection. |
-| `manifest.webmanifest` | Makes Add to Home Screen open it fullscreen with an icon. |
-| `icon.svg` | Home screen icon. |
-| `vercel.json` | Serves `draft-room.html` at `/` and keeps the app shell off the CDN cache. |
-| `README.md` | This document. |
+```bash
+npm install
+npm run dev        # dev server with hot reload
+npm test           # unit and integration tests
+npm run build      # typecheck, then build to dist/
+npm run preview    # serve the built output
+```
+
+`npm run build` runs `tsc --noEmit` first, so a type error fails the build rather than shipping.
 
 ---
 
@@ -31,128 +32,172 @@ Deployed as a static site on Vercel. It can also still be opened straight off di
 
 Step 3 matters for two reasons. Draft rooms have bad signal, and you want to find out about a problem on Thursday rather than on the clock. It also primes the offline cache and gets the draft an installed-app storage bucket, which browsers do not clear out from under you.
 
-You can still skip all of this and open `draft-room.html` directly from disk. The offline cache is the only thing that doesn't apply.
-
 ---
 
-## Setup
+## Architecture
 
-The Setup tab runs first and nothing else works until you save it.
+The app is layered so that the parts worth trusting can be tested without a browser, and so a new feature lands in one place rather than seven.
 
-- **Teams** — 4 to 16
-- **Rounds** — 10 to 25
-- **Your draft slot** — highlights your team in amber across the app
-- **Team names** — edit all of them; they show up on the board and the teams tab
+```
+src/
+  types.ts             shared model: Player, RankSource, LeagueSettings, DraftState
+  data/
+    players.2026.json  the player pool, one record per player
+    pool.ts            validates the JSON at boot, merges imported ranks
+    sources.ts         built-in rank source registry
+    import.ts          parses and name-matches a pasted ranking
+  domain/              pure functions, no DOM, no store
+    draft.ts           snake order, pick labels, whose turn is next
+    roster.ts          lineup slotting, needs, roster config
+    rankings.ts        consensus, spread, rail geometry
+    analytics.ts       tiers, positional runs, pick value, survival odds
+  state/
+    store.ts           minimal subscribe/notify store plus a Preact hook
+    app.ts             the store instance and every action
+    selectors.ts       derived reads: visible players, active sources
+    persistence.ts     localStorage, schema versioning, v1 migration
+  components/          Clock, Tabs, Controls, PlayerRow, Rail, PlayerSheet
+  views/               Players, Compare, Board, Teams, Setup, SourcesPanel
+```
 
-The roster shape is fixed at 1 QB / 2 RB / 2 WR / 1 TE / 2 FLEX / 1 DEF / 1 K. FLEX takes RB, WR, or TE.
+Three decisions carry most of the weight.
 
-You can come back to Setup mid-draft to fix a team name. Changing the *team count* mid-draft will re-assign existing picks to different teams, since snake order depends on it — the tab warns you when picks already exist.
+**Rank sources are data, not structure.** A player has a `ranks` map keyed by source id, and sources come from a registry. Nothing outside `data/sources.ts` knows that NFFC or ESPN exist. This is what makes importing a new ranking a normal operation instead of a schema change, and it is why a newly imported source shows up automatically as a sort chip, a compare column, a rail dot, and a row in the player sheet. Consensus is computed from whichever sources are currently active rather than stored, so muting one recomputes everything downstream.
+
+**Domain logic is pure and has no idea the DOM exists.** Snake order, lineup slotting, and tiering take plain data and return plain data. They are the parts where a bug would quietly cost you a pick, and they are tested directly.
+
+**Views render from state; nothing writes to the DOM by hand.** The previous version rebuilt every view as an HTML string on each interaction, which meant the search box needed code to restore focus and caret position after each keystroke, and the board had to re-scroll itself. Those workarounds are gone.
 
 ---
 
 ## Drafting
 
-Tap a player → a sheet shows his four ranks and who's on the clock → **Draft**. He's assigned to that team and the pick advances.
+Tap a player → a sheet shows every source's rank, the odds he lasts to your next pick, and who's on the clock → **Draft**.
 
-- The top strip always shows pick number, team on the clock, and what that team still needs.
+- The top strip shows pick number, team on the clock, and what that team still needs.
 - **Undo** removes the most recent pick.
-- Tapping an already-drafted player shows where he went and offers **Put back** — use this to pull a player out of the middle of the draft without undoing everything after him.
-- **Reset draft**, at the bottom of the Setup tab, wipes every pick. It takes two taps: the first arms it and it disarms itself after four seconds if you don't follow through. Team count, names, and your draft slot survive a reset, so you can run a mock and then start the real thing without re-entering the league.
+- Tapping a drafted player offers **Put back**, which pulls him out of the middle of the draft without undoing everything after him.
+- **Reset draft**, at the bottom of Setup, wipes every pick and takes two taps. Teams, names, draft slot, and imported rankings all survive it, so you can run a mock and then start the real thing.
 
 ---
 
 ## The tabs
 
-**Players** — the main list. Sort by NFFC, BIG (your Big Board), ESPN, YAHOO, or AVG (mean of available ranks). Filter by position, including a FLEX chip that shows RB + WR + TE together. Search by name or team. The "Hiding taken" toggle switches between hiding drafted players and showing them greyed and struck through.
+**Players** — the main list, sorted by any source or by AVG. Filter by position, including a FLEX chip for RB + WR + TE. Within a single position the list is split into tiers.
 
-**Compare** — all four ranks side by side in one table. Green marks the source highest on a player, red the lowest, and the Gap column is the distance between them. Default sort is most disagreement first; switch to Overall for straight rank order.
+**Compare** — every source side by side. Green marks the source highest on a player, red the lowest, and Gap is the distance between them. Sort by disagreement or overall.
 
-**Board** — the full snake grid. Rounds down the side, teams across the top, your team in amber. Scrolls to the current pick automatically.
+**Board** — the full snake grid, your team in amber, auto-scrolled to the current pick. Picks that landed well off consensus are marked green or red.
 
-**Teams** — any team's roster slotted into the starting lineup, with bench below. Shows which slots are still open and what pick each player came at.
+**Teams** — any team's roster slotted into the starting lineup, bench below.
+
+**Setup** — league settings, ranking sources, and reset.
 
 ### Reading the rail
 
-Every player row ends with four dots on a short horizontal axis:
+Every player row ends with one dot per source on a short axis. Centre is that player's consensus. **Left of centre means that source is higher on him.** A tight cluster is agreement; a spread-out rail is a fight. It's there so you can spot a contested player while scrolling.
 
-| Dot | Source |
-|---|---|
-| Amber | NFFC |
-| White | Big Board |
-| Blue | ESPN |
-| Purple | Yahoo |
+---
 
-Center line is that player's consensus. **Left of center = that source is higher on him. Right = lower.** A tight cluster means the sources agree; a spread-out rail means they don't. It's there so you can spot a contested player while scrolling, without opening anything.
+## Analytics
+
+All of it is derived at render time from the picks and the active sources.
+
+| Signal | Where | What it does |
+|---|---|---|
+| Tiers | Players tab | Groups a position by gaps between consecutive ranks, so a cliff starts a new tier and five interchangeable backs stay in one. |
+| Positional runs | Clock strip | Flags a position taken well above its own rate over the last 12 picks. |
+| Picks until your turn | Clock strip | Counts picks between now and your next selection. |
+| Survival odds | Player sheet | Rough chance he lasts to your next pick, from how many undrafted players the field ranks ahead of him, widened when sources disagree about him. |
+| Pick value | Board | Marks picks that landed well past or well before consensus. |
+
+Survival odds are an estimate from ADP, not a forecast. Treat a 60% as "probably, but don't bet the roster on it."
+
+---
+
+## Importing a ranking
+
+Setup → Rankings → paste and name it. It becomes a first-class source: sortable, comparable, and counted in consensus.
+
+Accepted formats, detected automatically:
+
+```
+Jahmyr Gibbs              # bare list, line order is the ranking
+1. Jahmyr Gibbs           # numbered list
+1,Jahmyr Gibbs            # CSV, no header
+rank,player,pos,team      # CSV with a header, any column order
+[{"name":"...","rank":1}] # JSON
+```
+
+Names are matched with punctuation, accents, and generational suffixes folded, so `A.J. Brown`, `AJ Brown`, and `Marvin Harrison Jr.` all land correctly. Defenses match as a full name, nickname, or abbreviation (`Houston Texans`, `Texans D/ST`, `HOU DST`). Anything that can't be matched is listed back to you rather than silently dropped, and an ambiguous surname is refused unless the import supplies a position or team to break the tie.
+
+**Mute** drops a source from consensus, the rail, and the compare table without deleting it.
 
 ---
 
 ## The data
 
-300 players, merged from two places:
+300 players. NFFC, ESPN, and Yahoo ranks come from a cross-platform ADP table, August 2026; the Big Board is a 150-player PPR board. AVG is the mean of whichever active sources rank a player, computed at runtime.
 
-- **NFFC, ESPN, and Yahoo ranks** — a cross-platform ADP table, August 2026.
-- **Big Board** — your own 150-player PPR board, transcribed from the image you provided. All 150 matched to the ranking data with no leftovers.
-
-`cons` (shown as AVG) is the mean of whichever ranks a player actually has. Players missing from a source show `–` and are excluded when you sort by that source.
+To refresh the pool, edit `src/data/players.2026.json` or add a new file alongside it. Records are `{id, name, team, pos, ranks}`, where `ranks` maps source id to rank and omits sources that don't rank him. Malformed records throw at boot rather than showing up as a blank cell mid-draft.
 
 ### Scoring formats are not identical
 
-This is the most important caveat in the project, and it's worth re-reading before you trust a gap:
+The most important caveat in the project:
 
 | Source | Format |
 |---|---|
-| NFFC | Full PPR, 6-point passing TDs, high-stakes entry fee |
-| ESPN | Full PPR (platform default) |
-| Yahoo | **Half PPR** (platform default) |
+| NFFC | Full PPR, 6-point passing TDs |
+| ESPN | Full PPR |
+| Yahoo | **Half PPR** |
 | Big Board | Full PPR |
 
-Yahoo does not publish a full-PPR ADP — there's one Yahoo number and it comes from drafts running Yahoo's half-PPR default. So part of every Yahoo gap is format, not opinion. In practice: Yahoo will read high on low-reception running backs and low on reception-volume receivers and tight ends relative to the other three. Adjust for that before calling something a disagreement.
-
-Two more differences worth knowing. NFFC ranks embed kickers and defenses in the overall list, so below roughly pick 140 a small NFFC-vs-others gap is an artifact rather than a real split. And ESPN's default list ranks kickers and defenses far higher than NFFC does — that's genuine, not a bug, and it's why K and DEF dominate the Compare tab's disagreement sort unless you filter by position.
+Yahoo publishes no full-PPR ADP, so part of every Yahoo gap is format rather than opinion: it reads high on low-reception backs and low on volume receivers and tight ends. NFFC embeds kickers and defenses in its overall list, so below roughly pick 140 a small NFFC gap is an artifact. ESPN ranks kickers and defenses far higher than NFFC does, which is genuine and is why K and DEF dominate the disagreement sort unless you filter by position.
 
 ### Rank capping in Compare
 
-A player one source ranks 465th isn't "ranked 465" in any meaningful sense — he's off the board. Compare caps every rank at your draft's horizon (last pick + 30) before computing the gap, so the sort surfaces real draft-day disagreement instead of measuring how long each list happens to be.
+A player one source ranks 465th isn't "ranked 465," he's off the board. Compare caps every rank at the draft's horizon (last pick + 30) before computing the gap, so the sort surfaces real draft-day disagreement instead of measuring how long each list happens to be.
 
 ---
 
 ## Saving and storage
 
-Picks save after every action. Locking your phone, switching apps, or an accidental reload won't lose the draft.
+Picks save after every action, debounced, and flush immediately when the app is backgrounded or closed.
 
-Everything lives in `localStorage` on the device you're drafting on. There is no account, no sign-in, and nothing is sent anywhere — the deployed site is static files and has no backend to send it to. The flip side is that the draft is **per device and per browser**. Your phone and your laptop each keep their own separate draft, and clearing site data clears it.
+Everything lives in `localStorage` on the device you're drafting on. There is no account and no backend to send anything to. The flip side is that the draft is **per device and per browser** — your phone and your laptop each keep their own.
 
-On first load the app calls `navigator.storage.persist()`. Without it, browsers are free to evict a website's `localStorage` when the device is short on space, and Safari additionally clears it after seven days of not visiting the site. A granted persist exempts the origin from both. Chrome and Firefox grant it silently once the app is installed to the home screen; Safari grants it on Add to Home Screen. This is the reason step 3 above is worth doing.
+On first load the app calls `navigator.storage.persist()`. Without it, browsers may evict a site's `localStorage` under storage pressure, and Safari clears it after seven days of not visiting. A granted persist exempts the origin from both, and installing to the home screen is what gets it granted.
 
-Storage still falls back through three layers if something is unavailable: the artifact storage API if the page is running inside one, then `localStorage`, then plain memory. Memory is the last resort and does not survive a reload — it only happens in a browser with storage fully disabled.
+Saved state is schema-versioned. A draft saved by the original single-file version is migrated on first load rather than lost, and there's a test covering that.
 
 ### Offline
 
-`sw.js` caches the app on first visit and serves from that cache first, so opening the site with no connection works and costs no network round trip. A new deploy is fetched in the background and takes effect the next time you open the app.
+`vite-plugin-pwa` precaches the whole app, so opening it with no connection works and costs no network round trip. A new deploy is fetched in the background and takes effect the next time you open it.
+
+---
+
+## Testing
+
+67 tests, no browser required.
+
+- `src/domain/*.test.ts` — snake order, lineup slotting, consensus, spread, rail geometry.
+- `src/data/import.test.ts` — ranking parsers and name matching, including ambiguity and duplicates.
+- `src/App.test.tsx` — the app rendered into a real DOM and driven through drafting, undo, put-back, search, every tab, importing a source, muting a source, reset, reload persistence, and the v1 migration.
 
 ---
 
 ## Known limitations
 
-- **No kickers or defenses on the Big Board.** Your board doesn't include them, so sorting by BIG in those positions returns nothing. The app says so and tells you to switch sources. Use NFFC, ESPN, Yahoo, or AVG for K and DEF.
-- **Ranks are a snapshot.** They were pulled in August 2026 and don't update. Injury news after that date isn't reflected — check anything that matters before you take him.
+- **No kickers or defenses on the Big Board**, so sorting by BIG in those positions returns nothing. Use another source.
+- **Ranks are a snapshot.** Pulled August 2026. Import a fresher ADP if something moved.
 - **No trades, keepers, or auction.** Straight snake only.
-- **One draft at a time.** Starting a new one means resetting the current one.
-- **One device.** The draft is not shared or synced. Whoever is tapping picks needs to be the one holding the phone.
-- **No projections or tiers.** This tracks a draft; it doesn't tell you who's good.
+- **One draft at a time**, on **one device**. The board is not shared or synced.
+- **The roster shape is configurable in the data model but not yet in the UI.** `LeagueSettings.roster` is read everywhere it matters; Setup just doesn't expose an editor for it yet.
 
 ---
 
-## Technical notes
+## Deploying
 
-Vanilla HTML, CSS, and JavaScript in a single file, roughly 67 KB with the player data embedded. No frameworks, no CDN, no webfonts — system font stack throughout, deliberately, so nothing depends on a connection. Dark palette with per-position color coding, 44px-minimum tap targets, bottom navigation in the thumb zone, and `prefers-reduced-motion` respected.
+Static site. Vercel detects Vite and builds with `npm run build` into `dist`. `vercel.json` sends `index.html` and `sw.js` with a revalidating cache header so a push reaches devices instead of sitting behind the CDN; the service worker handles offline caching.
 
-### Deploying
-
-Static site, no build step. Vercel serves the repo root as-is and `vercel.json` rewrites `/` to `draft-room.html`. `sw.js` and `draft-room.html` are sent with `Cache-Control: no-cache` so a push reaches devices instead of sitting behind the CDN; the service worker handles the actual offline caching.
-
-First-time setup: go to [vercel.com/new](https://vercel.com/new), import `aaronchiuwei/DraftBoard`, and set **Framework Preset** to **Other**. Leave the build command, output directory, and install command empty — there is nothing to build, and giving it a build command is the one way to break this. Deploy.
-
-After that, every push to `main` deploys on its own, and pull requests get their own preview URLs.
-
-To change the player data, edit the embedded `PLAYERS` array near the top of the `<script>` block. Each entry is `{id, name, team, pos, espn, nffc, yahoo, bb, cons}`, where `null` means that source doesn't rank him.
+First-time setup: import the repo at [vercel.com/new](https://vercel.com/new). Framework Preset should detect as **Vite** — leave the build and output settings alone. After that, every push to `main` deploys, and pull requests get preview URLs.

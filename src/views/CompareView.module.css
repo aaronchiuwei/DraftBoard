@@ -1,0 +1,88 @@
+.sortRow {
+  padding: 11px 12px 9px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sortRow .label {
+  flex: 1;
+}
+
+.sortBtn {
+  padding: 8px 11px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sortBtn.on {
+  color: var(--amber);
+  border-color: var(--amber-dim);
+  background: rgba(255, 176, 32, 0.1);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 5;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 9px 4px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+}
+
+.table td {
+  padding: 9px 4px;
+  border-bottom: 1px solid rgba(46, 56, 70, 0.5);
+  font-size: 13px;
+}
+
+.nameCell {
+  padding-left: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.value {
+  text-align: center;
+  font-family: var(--num);
+  width: 44px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gone {
+  opacity: 0.32;
+}
+
+.high {
+  color: var(--RB);
+  font-weight: 700;
+}
+
+.low {
+  color: var(--QB);
+  font-weight: 700;
+}
+
+.gap {
+  text-align: center;
+  width: 46px;
+  padding-right: 12px;
+  font-family: var(--num);
+  font-weight: 700;
+  color: var(--amber);
+}

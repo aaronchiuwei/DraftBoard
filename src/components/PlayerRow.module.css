@@ -1,0 +1,98 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(46, 56, 70, 0.55);
+  width: 100%;
+  text-align: left;
+  min-height: 56px;
+}
+
+.row:active {
+  background: var(--raised);
+}
+
+.gone {
+  opacity: 0.3;
+}
+
+.gone .name {
+  text-decoration: line-through;
+  text-decoration-color: var(--dim);
+}
+
+.rank {
+  font-family: var(--num);
+  font-size: 15px;
+  font-weight: 700;
+  width: 34px;
+  flex: 0 0 34px;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pos {
+  flex: 0 0 34px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-align: center;
+  padding: 3px 0;
+  border-radius: 4px;
+  color: #10141b;
+}
+
+.mid {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub {
+  font-size: 11px;
+  color: var(--dim);
+  margin-top: 1px;
+  font-family: var(--num);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub b {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* The last player before a talent cliff is the one worth reaching for. */
+.tierBreak {
+  border-bottom: 1px solid var(--amber-dim);
+}
+
+.tierTag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px 6px;
+  background: var(--ink);
+  border-bottom: 1px solid rgba(46, 56, 70, 0.55);
+}
+
+.tierTag span {
+  color: var(--amber);
+}
+
+.tierRule {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}

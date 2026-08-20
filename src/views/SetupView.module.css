@@ -1,0 +1,112 @@
+.setup {
+  padding: 18px 16px 40px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.setup h1 {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+}
+
+.lede {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 22px;
+}
+
+.field {
+  margin-bottom: 18px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 7px;
+}
+
+.field select,
+.field input[type='text'] {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 11px 12px;
+  font-size: 15px;
+}
+
+.nameList {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.nameRow span {
+  font-family: var(--num);
+  font-size: 12px;
+  color: var(--dim);
+  width: 22px;
+  flex: 0 0 22px;
+}
+
+.nameRow input {
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 10px;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.nameRow input.me {
+  border-color: var(--amber-dim);
+  color: var(--amber);
+}
+
+.primary {
+  width: 100%;
+  background: var(--amber);
+  color: #10141b;
+  font-weight: 800;
+  font-size: 15px;
+  padding: 14px;
+  border-radius: 8px;
+  letter-spacing: 0.01em;
+  margin-top: 6px;
+}
+
+.section {
+  margin-top: 30px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.section p {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 7px 0 13px;
+}
+
+.danger {
+  width: 100%;
+  background: rgba(255, 107, 107, 0.09);
+  border: 1px solid var(--QB);
+  color: var(--QB);
+  font-weight: 800;
+  font-size: 15px;
+  padding: 14px;
+  border-radius: 8px;
+}
+
+.danger.armed {
+  background: var(--QB);
+  color: #10141b;
+}

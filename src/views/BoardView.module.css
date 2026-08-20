@@ -1,0 +1,96 @@
+.wrap {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 24px;
+}
+
+.board {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.board th {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--panel);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+  min-width: 92px;
+  max-width: 92px;
+}
+
+.board th.me {
+  color: var(--amber);
+}
+
+.roundHead {
+  position: sticky;
+  left: 0;
+  z-index: 7;
+  background: var(--panel);
+  min-width: 34px;
+  max-width: 34px;
+  border-right: 1px solid var(--line);
+}
+
+.round {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: var(--ink);
+  font-family: var(--num);
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 700;
+  padding: 0 8px;
+  border-right: 1px solid var(--line);
+  text-align: center;
+}
+
+.cell {
+  min-width: 92px;
+  max-width: 92px;
+  height: 44px;
+  padding: 4px 5px;
+  border-bottom: 1px solid rgba(46, 56, 70, 0.5);
+  border-right: 1px solid rgba(46, 56, 70, 0.35);
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+.cell .name {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell .sub {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.next {
+  background: rgba(255, 176, 32, 0.1);
+  outline: 1px solid var(--amber-dim);
+  outline-offset: -1px;
+}
+
+/* A pick well past the player's rank is a steal; well before it is a reach. */
+.steal {
+  color: var(--RB);
+}
+
+.reach {
+  color: var(--QB);
+}

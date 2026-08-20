@@ -1,0 +1,107 @@
+.controls {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--ink);
+  border-bottom: 1px solid var(--line);
+  padding: 9px 12px 10px;
+}
+
+.sourceRow {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.sourceRow::-webkit-scrollbar {
+  display: none;
+}
+
+.sourceRow button {
+  flex: 1 0 auto;
+  padding: 8px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.sourceRow button.on {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #10141b;
+}
+
+.posRow {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: 8px;
+}
+
+.posRow::-webkit-scrollbar {
+  display: none;
+}
+
+.posRow button {
+  flex: 0 0 auto;
+  padding: 6px 11px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.posRow button.on {
+  color: #10141b;
+  background: var(--text);
+  border-color: var(--text);
+}
+
+.findRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.findRow input {
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.findRow input::placeholder {
+  color: var(--dim);
+}
+
+.toggle {
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.toggle.on {
+  color: var(--amber);
+  border-color: var(--amber-dim);
+  background: rgba(255, 176, 32, 0.1);
+}

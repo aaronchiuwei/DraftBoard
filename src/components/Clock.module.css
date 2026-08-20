@@ -1,0 +1,100 @@
+.clock {
+  flex: 0 0 auto;
+  padding: calc(var(--safe-t) + 8px) 12px 8px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pickNo {
+  font-family: var(--num);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--amber);
+  background: rgba(255, 176, 32, 0.12);
+  border: 1px solid var(--amber-dim);
+  padding: 5px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.me {
+  color: var(--amber);
+}
+
+.needs {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.undo {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  padding: 7px 11px;
+  border-radius: 6px;
+  background: var(--raised);
+  white-space: nowrap;
+}
+
+.undo:disabled {
+  opacity: 0.35;
+}
+
+/* Live signals sit under the clock so they are read without changing tabs. */
+.signals {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.signals::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--raised);
+  white-space: nowrap;
+}
+
+.run {
+  border-color: var(--amber-dim);
+  color: var(--amber);
+  background: rgba(255, 176, 32, 0.1);
+}

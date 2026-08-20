@@ -1,0 +1,33 @@
+.rail {
+  flex: 0 0 46px;
+  height: 30px;
+  position: relative;
+}
+
+.axis {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--line);
+  transform: translateY(-50%);
+}
+
+.center {
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  bottom: 3px;
+  width: 1px;
+  background: var(--dim);
+  transform: translateX(-50%);
+}
+
+.dot {
+  position: absolute;
+  width: 3px;
+  height: 7px;
+  border-radius: 1px;
+  transform: translateX(-50%);
+}

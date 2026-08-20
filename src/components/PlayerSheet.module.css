@@ -1,0 +1,140 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  background: rgba(8, 11, 15, 0.72);
+  align-items: flex-end;
+}
+
+.card {
+  width: 100%;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-radius: 16px 16px 0 0;
+  padding: 20px 16px calc(20px + var(--safe-b));
+  animation: up 0.16s ease-out;
+  max-height: 88dvh;
+  overflow-y: auto;
+}
+
+@keyframes up {
+  from {
+    transform: translateY(14px);
+    opacity: 0.6;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+}
+
+.name {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+.ranks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 7px;
+  margin: 16px 0;
+}
+
+.ranks div {
+  background: var(--raised);
+  border-radius: 7px;
+  padding: 9px 4px;
+  text-align: center;
+}
+
+.ranks b {
+  display: block;
+  font-family: var(--num);
+  font-size: 17px;
+  font-weight: 700;
+  margin-top: 3px;
+}
+
+.odds {
+  background: var(--raised);
+  border-radius: 7px;
+  padding: 11px 12px;
+  margin-bottom: 13px;
+}
+
+.oddsBar {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.oddsFill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--amber);
+}
+
+.oddsText {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.oddsText b {
+  color: var(--text);
+}
+
+.to {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.to b {
+  color: var(--amber);
+}
+
+.buttons {
+  display: flex;
+  gap: 9px;
+}
+
+.buttons button {
+  flex: 1;
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.confirm {
+  background: var(--amber);
+  color: #10141b;
+}
+
+.cancel {
+  background: var(--raised);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+.undraft {
+  background: var(--raised);
+  color: var(--QB);
+  border: 1px solid var(--line);
+}
