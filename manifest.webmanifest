@@ -1,0 +1,19 @@
+{
+  "name": "Draft Room",
+  "short_name": "Draft Room",
+  "description": "Offline-first draft tracker for a live PPR fantasy football draft.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10141B",
+  "theme_color": "#10141B",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
