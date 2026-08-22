@@ -1,6 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL;
+/**
+ * The dashboard Connect dialog copies a REST endpoint (`.../rest/v1`).
+ * createClient wants the project origin and appends its own paths, so that
+ * extra suffix makes every auth call 404 with "Invalid path specified".
+ */
+export function projectUrl(raw: string): string {
+  return raw.trim().replace(/\/+$/, '').replace(/\/rest\/v1$/i, '');
+}
+
+const url = import.meta.env.VITE_SUPABASE_URL
+  ? projectUrl(import.meta.env.VITE_SUPABASE_URL)
+  : undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 /**
@@ -41,6 +52,9 @@ export function readableAuthError(message: string): string {
   if (text.includes('password should be at least')) return 'Use a password of at least six characters.';
   if (text.includes('failed to fetch') || text.includes('network')) {
     return 'No connection. You can keep drafting offline.';
+  }
+  if (text.includes('invalid path')) {
+    return 'The Supabase URL is wrong. Use the project URL, not the /rest/v1 path.';
   }
   return message;
 }

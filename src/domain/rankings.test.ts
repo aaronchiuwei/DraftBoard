@@ -34,7 +34,7 @@ describe('consensusOf', () => {
   });
 
   it('matches the values the original data shipped with', () => {
-    // Ja'Marr Chase: espn 4, nffc 3, yahoo 3, bb 3
+    // four sources at 4, 3, 3, 3
     expect(consensusOf(player({ a: 4, b: 3, c: 3, d: 3 }), ids)).toBeCloseTo(3.25, 5);
   });
 });

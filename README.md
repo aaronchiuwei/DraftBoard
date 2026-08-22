@@ -250,7 +250,7 @@ Names are matched with punctuation, accents, and generational suffixes folded, s
 
 ## The data
 
-300 players. NFFC, ESPN, and Yahoo ranks come from a cross-platform ADP table, August 2026; the Big Board is a 150-player PPR board. AVG is the mean of whichever active sources rank a player, computed at runtime.
+300 players. NFFC, ESPN, and Sleeper ranks come from each platform's ADP, August 2026; Yahoo is the Yahoo analysts' consensus full-PPR board; the Big Board is a 150-player PPR board. AVG is the mean of whichever active sources rank a player, computed at runtime.
 
 To refresh the pool, edit `src/data/players.2026.json` or add a new file alongside it. Records are `{id, name, team, pos, ranks}`, where `ranks` maps source id to rank and omits sources that don't rank him. Malformed records throw at boot rather than showing up as a blank cell mid-draft.
 
@@ -262,10 +262,11 @@ The most important caveat in the project:
 |---|---|
 | NFFC | Full PPR, 6-point passing TDs |
 | ESPN | Full PPR |
-| Yahoo | **Half PPR** |
+| Yahoo | Full PPR |
+| Sleeper | Full PPR |
 | Big Board | Full PPR |
 
-Yahoo publishes no full-PPR ADP, so part of every Yahoo gap is format rather than opinion: it reads high on low-reception backs and low on volume receivers and tight ends. NFFC embeds kickers and defenses in its overall list, so below roughly pick 140 a small NFFC gap is an artifact. ESPN ranks kickers and defenses far higher than NFFC does, which is genuine and is why K and DEF dominate the disagreement sort unless you filter by position.
+Yahoo is analyst consensus (Boone, Harmon, Norris, Pianowski, Smyth, Winks), not Yahoo ADP, so a Yahoo gap is opinion rather than format. Sleeper's default rooms are half-PPR; the Sleeper column is their PPR ADP, not a typical Sleeper room. NFFC embeds kickers and defenses in its overall list, so below roughly pick 140 a small NFFC gap is an artifact. ESPN ranks kickers and defenses far higher than NFFC does, which is genuine and is why K and DEF dominate the disagreement sort unless you filter by position.
 
 ### Rank capping in Compare
 

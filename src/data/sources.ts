@@ -2,8 +2,8 @@ import type { RankSource } from '../types';
 
 /**
  * Scoring formats are not identical across these, which is the single most
- * important caveat when reading a gap. Yahoo in particular publishes only a
- * half-PPR number, so part of every Yahoo gap is format rather than opinion.
+ * important caveat when reading a gap. NFFC uses 6-point passing TDs; the
+ * others are full PPR. Yahoo is analyst consensus rather than ADP.
  */
 export const BUILTIN_SOURCES: readonly RankSource[] = [
   {
@@ -37,10 +37,19 @@ export const BUILTIN_SOURCES: readonly RankSource[] = [
     id: 'yahoo',
     label: 'Yahoo',
     short: 'YHOO',
-    format: 'Half PPR',
+    format: 'Full PPR',
     color: 'var(--TE)',
     origin: 'builtin',
-    note: 'Reads high on low-reception backs and low on volume receivers, because of the format.'
+    note: 'Yahoo analysts\' consensus PPR board, not Yahoo ADP. Kickers and defenses sit in the overall list.'
+  },
+  {
+    id: 'sleeper',
+    label: 'Sleeper',
+    short: 'SLEEP',
+    format: 'Full PPR',
+    color: '#2DD4BF',
+    origin: 'builtin',
+    note: 'Sleeper\'s own PPR ADP. Default Sleeper rooms are half-PPR, so this is the PPR draft market rather than a typical Sleeper league.'
   }
 ];
 
