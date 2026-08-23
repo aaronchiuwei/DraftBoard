@@ -1,4 +1,4 @@
-import type { AppState } from '../types';
+import type { AppState, Player, Pos } from '../types';
 import { CONSENSUS } from '../types';
 import {
   DEPTH_FETCHED_AT,
@@ -9,16 +9,20 @@ import {
   type ResolvedEntry
 } from '../data/depth';
 import { injuryForName, reportFromTag } from '../data/injuries';
+import { headshotFor } from '../data/stats';
 import { valueFor } from '../domain/rankings';
 import { draftedIds } from '../domain/draft';
 import { openSheet, setDepthTeam } from '../state/app';
 import { selectFlagged, selectPool, selectSourceIds, selectSources } from '../state/selectors';
+import { Headshot } from '../components/Headshot';
 import { InjuryTag } from '../components/InjuryTag';
 import { StarButton } from '../components/StarButton';
 import styles from './DepthView.module.css';
 
 interface RowProps {
   entry: ResolvedEntry;
+  player: Player | null;
+  groupPos: Pos;
   /** Depth order within the position, one-indexed. */
   slot: number;
   rank: number | null;
@@ -28,7 +32,7 @@ interface RowProps {
   queuePlace: number | undefined;
 }
 
-function DepthRow({ entry, slot, rank, rankLabel, gone, flagged, queuePlace, teamCode }: RowProps & { teamCode: string }) {
+function DepthRow({ entry, player, groupPos, slot, rank, rankLabel, gone, flagged, queuePlace, teamCode }: RowProps & { teamCode: string }) {
   const id = entry.playerId;
   const injury =
     injuryForName(entry.name, teamCode) ?? (entry.status ? reportFromTag(entry.status) : null);
@@ -44,6 +48,12 @@ function DepthRow({ entry, slot, rank, rankLabel, gone, flagged, queuePlace, tea
   const body = (
     <>
       <span class={`${styles.slot} ${slot === 1 ? styles.starter : ''} mono`}>{slot}</span>
+      <Headshot
+        size="sm"
+        src={player ? headshotFor(player) : null}
+        name={entry.name}
+        pos={player?.pos ?? groupPos}
+      />
       <span class={styles.mid}>
         <span class={styles.nameLine}>
           <span class={styles.name}>{entry.name}</span>
@@ -137,6 +147,8 @@ export function DepthView({ state }: { state: AppState }) {
                   <DepthRow
                     key={`${entry.name}-${i}`}
                     entry={entry}
+                    player={player ?? null}
+                    groupPos={group.pos as Pos}
                     slot={i + 1}
                     rank={player ? valueFor(player, state.ui.source, sourceIds) : null}
                     rankLabel={rankLabel}

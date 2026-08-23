@@ -92,6 +92,12 @@ function value(line: StatLine | undefined, key: string): number | null {
   return typeof v === 'number' ? v : null;
 }
 
+/** Sleeper CDN portrait for a pool player, or null when none is baked. */
+export function headshotFor(player: Player): string | null {
+  const entry = data.players[String(player.id)];
+  return entry?.shot ? `https://sleepercdn.com/content/nfl/players/${entry.shot}.jpg` : null;
+}
+
 /**
  * The stat panel for one player, or null when Sleeper has neither a season nor
  * a projection for him. Rows both sides leave empty are dropped, so a rookie
@@ -111,7 +117,7 @@ export function statsFor(player: Player): PlayerStats | null {
   if (rows.length === 0) return null;
 
   return {
-    headshot: entry.shot ? `https://sleepercdn.com/content/nfl/players/${entry.shot}.jpg` : null,
+    headshot: headshotFor(player),
     rows,
     hasActual: entry.a !== undefined,
     hasProjected: entry.p !== undefined

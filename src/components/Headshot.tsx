@@ -7,6 +7,8 @@ interface Props {
   src: string | null;
   name: string;
   pos: Pos;
+  /** Large for the player sheet; small for list rows. */
+  size?: 'sm' | 'lg';
 }
 
 function initials(name: string): string {
@@ -21,11 +23,12 @@ function initials(name: string): string {
  * load is a normal state rather than an error: it falls back to initials in the
  * position colour, which is the same information the row already carries.
  */
-export function Headshot({ src, name, pos }: Props) {
+export function Headshot({ src, name, pos, size = 'lg' }: Props) {
   const [failed, setFailed] = useState(false);
+  const wrapClass = size === 'sm' ? `${styles.wrap} ${styles.sm}` : styles.wrap;
 
   return (
-    <div class={styles.wrap} style={{ borderColor: `var(--${pos})` }}>
+    <div class={wrapClass} style={{ borderColor: `var(--${pos})` }}>
       {src && !failed ? (
         <img
           class={styles.img}

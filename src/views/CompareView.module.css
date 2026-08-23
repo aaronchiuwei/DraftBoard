@@ -57,6 +57,17 @@
   text-align: left;
 }
 
+.nameInner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.nameText {
+  min-width: 0;
+}
+
 .value {
   text-align: center;
   font-family: var(--num);

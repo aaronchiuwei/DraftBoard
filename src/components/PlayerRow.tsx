@@ -1,6 +1,8 @@
 import type { Player, RankSource, SourceKey } from '../types';
 import { injuryFor } from '../data/injuries';
+import { headshotFor } from '../data/stats';
 import { rankOf, valueFor } from '../domain/rankings';
+import { Headshot } from './Headshot';
 import { InjuryTag } from './InjuryTag';
 import { Rail } from './Rail';
 import { StarButton } from './StarButton';
@@ -51,6 +53,12 @@ export function PlayerRow({
         <span class={styles.pos} style={{ background: `var(--${player.pos})` }}>
           {player.pos}
         </span>
+        <Headshot
+          size="sm"
+          src={headshotFor(player)}
+          name={player.name}
+          pos={player.pos}
+        />
         <span class={styles.mid}>
           <span class={styles.nameLine}>
             <span class={styles.name}>{player.name}</span>

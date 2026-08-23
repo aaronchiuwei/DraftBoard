@@ -1,7 +1,9 @@
 import type { AppState, Player } from '../types';
 import { Controls } from '../components/Controls';
+import { Headshot } from '../components/Headshot';
 import { InjuryTag } from '../components/InjuryTag';
 import { injuryFor } from '../data/injuries';
+import { headshotFor } from '../data/stats';
 import { consensusOf, rankOf, spreadOf, type Spread } from '../domain/rankings';
 import { draftedIds } from '../domain/draft';
 import { openSheet, setCompareSort } from '../state/app';
@@ -92,11 +94,21 @@ export function CompareView({ state }: { state: AppState }) {
               onClick={() => openSheet(player.id)}
             >
               <td class={styles.nameCell}>
-                <span style={{ color: `var(--${player.pos})`, fontWeight: 800, fontSize: 10 }}>
-                  {player.pos}
-                </span>{' '}
-                {player.name}
-                {injury && <> <InjuryTag report={injury} /></>}
+                <span class={styles.nameInner}>
+                  <Headshot
+                    size="sm"
+                    src={headshotFor(player)}
+                    name={player.name}
+                    pos={player.pos}
+                  />
+                  <span class={styles.nameText}>
+                    <span style={{ color: `var(--${player.pos})`, fontWeight: 800, fontSize: 10 }}>
+                      {player.pos}
+                    </span>{' '}
+                    {player.name}
+                    {injury && <> <InjuryTag report={injury} /></>}
+                  </span>
+                </span>
               </td>
               {sources.map(s => {
                 const v = rankOf(player, s.id);
