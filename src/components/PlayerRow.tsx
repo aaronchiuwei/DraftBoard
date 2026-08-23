@@ -1,9 +1,10 @@
 import type { Player, RankSource, SourceKey } from '../types';
 import { injuryFor } from '../data/injuries';
-import { headshotFor } from '../data/stats';
+import { headshotFor, isRookie } from '../data/stats';
 import { rankOf, valueFor } from '../domain/rankings';
 import { Headshot } from './Headshot';
 import { InjuryTag } from './InjuryTag';
+import { RookieTag } from './RookieTag';
 import { Rail } from './Rail';
 import { StarButton } from './StarButton';
 import styles from './PlayerRow.module.css';
@@ -62,6 +63,7 @@ export function PlayerRow({
         <span class={styles.mid}>
           <span class={styles.nameLine}>
             <span class={styles.name}>{player.name}</span>
+            {isRookie(player) && <RookieTag />}
             {injury && <InjuryTag report={injury} />}
             {queuePlace !== undefined && <span class={styles.queueChip}>Q{queuePlace}</span>}
           </span>

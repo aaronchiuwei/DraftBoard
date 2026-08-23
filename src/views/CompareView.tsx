@@ -2,8 +2,9 @@ import type { AppState, Player } from '../types';
 import { Controls } from '../components/Controls';
 import { Headshot } from '../components/Headshot';
 import { InjuryTag } from '../components/InjuryTag';
+import { RookieTag } from '../components/RookieTag';
 import { injuryFor } from '../data/injuries';
-import { headshotFor } from '../data/stats';
+import { headshotFor, isRookie } from '../data/stats';
 import { consensusOf, rankOf, spreadOf, type Spread } from '../domain/rankings';
 import { draftedIds } from '../domain/draft';
 import { openSheet, setCompareSort } from '../state/app';
@@ -106,6 +107,7 @@ export function CompareView({ state }: { state: AppState }) {
                       {player.pos}
                     </span>{' '}
                     {player.name}
+                    {isRookie(player) && <> <RookieTag /></>}
                     {injury && <> <InjuryTag report={injury} /></>}
                   </span>
                 </span>

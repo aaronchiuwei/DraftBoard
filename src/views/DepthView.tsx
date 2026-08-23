@@ -9,13 +9,14 @@ import {
   type ResolvedEntry
 } from '../data/depth';
 import { injuryForName, reportFromTag } from '../data/injuries';
-import { headshotFor } from '../data/stats';
+import { headshotFor, isRookie } from '../data/stats';
 import { valueFor } from '../domain/rankings';
 import { draftedIds } from '../domain/draft';
 import { openSheet, setDepthTeam } from '../state/app';
 import { selectFlagged, selectPool, selectSourceIds, selectSources } from '../state/selectors';
 import { Headshot } from '../components/Headshot';
 import { InjuryTag } from '../components/InjuryTag';
+import { RookieTag } from '../components/RookieTag';
 import { StarButton } from '../components/StarButton';
 import styles from './DepthView.module.css';
 
@@ -57,6 +58,7 @@ function DepthRow({ entry, player, groupPos, slot, rank, rankLabel, gone, flagge
       <span class={styles.mid}>
         <span class={styles.nameLine}>
           <span class={styles.name}>{entry.name}</span>
+          {player && isRookie(player) && <RookieTag />}
           {entry.pos && <span class={styles.tag}>{entry.pos}</span>}
           {injury && <InjuryTag report={injury} />}
           {queuePlace !== undefined && <span class={styles.queueChip}>Q{queuePlace}</span>}

@@ -98,6 +98,12 @@ export function headshotFor(player: Player): string | null {
   return entry?.shot ? `https://sleepercdn.com/content/nfl/players/${entry.shot}.jpg` : null;
 }
 
+/** True when Sleeper has a projection but no last-season line — i.e. a rookie. */
+export function isRookie(player: Player): boolean {
+  const entry = data.players[String(player.id)];
+  return entry !== undefined && entry.a === undefined;
+}
+
 /**
  * The stat panel for one player, or null when Sleeper has neither a season nor
  * a projection for him. Rows both sides leave empty are dropped, so a rookie

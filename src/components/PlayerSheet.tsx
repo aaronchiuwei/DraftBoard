@@ -5,8 +5,9 @@ import { survivalOdds } from '../domain/analytics';
 import { selectHorizon, selectPool, selectSourceIds, selectSources } from '../state/selectors';
 import { closeSheet, draftPlayer, toggleFlagged, toggleQueued, undraftPlayer } from '../state/app';
 import { injuryFor, injuryTooltip } from '../data/injuries';
-import { statsFor } from '../data/stats';
+import { statsFor, isRookie } from '../data/stats';
 import { Headshot } from './Headshot';
+import { RookieTag } from './RookieTag';
 import { StatTable } from './StatTable';
 import styles from './PlayerSheet.module.css';
 
@@ -48,7 +49,10 @@ export function PlayerSheet({ state }: { state: AppState }) {
               next sheet opened from the same list */}
           <Headshot key={player.id} src={stats?.headshot ?? null} name={player.name} pos={player.pos} />
           <div class={styles.headerText}>
-            <div class={styles.name}>{player.name}</div>
+            <div class={styles.nameLine}>
+              <div class={styles.name}>{player.name}</div>
+              {isRookie(player) && <RookieTag />}
+            </div>
             <div class={styles.meta}>
               <span style={{ color: `var(--${player.pos})`, fontWeight: 800 }}>{player.pos}</span>
               {' · '}

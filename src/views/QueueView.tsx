@@ -2,7 +2,7 @@ import type { AppState } from '../types';
 import { rankOf } from '../domain/rankings';
 import { pickLabel } from '../domain/draft';
 import { injuryFor } from '../data/injuries';
-import { headshotFor } from '../data/stats';
+import { headshotFor, isRookie } from '../data/stats';
 import {
   clearQueue,
   moveInQueue,
@@ -13,6 +13,7 @@ import {
 import { selectFlagged, selectQueue, selectSources, type QueueEntry } from '../state/selectors';
 import { InjuryTag } from '../components/InjuryTag';
 import { Headshot } from '../components/Headshot';
+import { RookieTag } from '../components/RookieTag';
 import styles from './QueueView.module.css';
 
 interface RowProps {
@@ -50,6 +51,7 @@ function QueueRow({ entry, flagged, first, last, rank, takenAt, teams }: RowProp
           <span class={styles.nameLine}>
             {flagged && <span class={styles.star}>★</span>}
             <span class={styles.name}>{player.name}</span>
+            {isRookie(player) && <RookieTag />}
             {injury && <InjuryTag report={injury} />}
           </span>
           <span class={styles.sub}>
