@@ -3,7 +3,7 @@ import { isDraftOver, picksUntilTurn, pickLabel, teamName, totalPicks } from '..
 import { formatGaps, gapsOf, lineupFor } from '../domain/roster';
 import { positionalRuns } from '../domain/analytics';
 import { selectNextInQueue, selectPool, selectTeamOnClock } from '../state/selectors';
-import { openSheet, undoLastPick } from '../state/app';
+import { openCompare, openSheet, undoLastPick } from '../state/app';
 import styles from './Clock.module.css';
 
 export function Clock({ state }: { state: AppState }) {
@@ -11,6 +11,7 @@ export function Clock({ state }: { state: AppState }) {
   const pool = selectPool(state);
   const onClock = selectTeamOnClock(state);
   const pickIndex = draft.picks.length;
+  const pinnedCount = state.comparePins.length;
 
   let pickText = '—';
   let title = 'Draft Room';
@@ -33,10 +34,11 @@ export function Clock({ state }: { state: AppState }) {
   const runs = draft.ready ? positionalRuns(draft, pool).filter(r => r.hot).slice(0, 3) : [];
   // the top of the queue is the one thing you want without changing tabs
   const nextUp = draft.ready && !isDraftOver(draft) ? selectNextInQueue(state) : null;
+  const showCompare = pinnedCount >= 2;
   const showSignals =
     draft.ready &&
     !isDraftOver(draft) &&
-    ((untilMyTurn !== null && untilMyTurn > 0) || runs.length > 0 || nextUp);
+    ((untilMyTurn !== null && untilMyTurn > 0) || runs.length > 0 || nextUp || showCompare);
 
   return (
     <div class={`${styles.clock} ${isMe ? styles.alert : ''}`}>
@@ -63,6 +65,11 @@ export function Clock({ state }: { state: AppState }) {
 
       {showSignals && (
         <div class={styles.signals}>
+          {showCompare ? (
+            <button class={`${styles.chip} ${styles.compare}`} onClick={openCompare}>
+              Compare these {pinnedCount}
+            </button>
+          ) : null}
           {untilMyTurn !== null && untilMyTurn > 0 ? (
             <span class={styles.chip}>You pick in {untilMyTurn}</span>
           ) : null}

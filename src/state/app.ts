@@ -199,15 +199,24 @@ export function clearComparePins(): void {
 /** Pin a player and jump to Compare. Drops the oldest pin when the list is full. */
 export function pinForCompare(playerId: number): void {
   store.set(s => {
-    if (s.comparePins.includes(playerId)) {
-      return { ...s, ui: { ...s.ui, view: 'compare' } };
-    }
-    const next =
-      s.comparePins.length >= MAX_COMPARE_PINS
+    const nextPins = s.comparePins.includes(playerId)
+      ? s.comparePins
+      : s.comparePins.length >= MAX_COMPARE_PINS
         ? [...s.comparePins.slice(1), playerId]
         : [...s.comparePins, playerId];
-    return { ...s, comparePins: next, ui: { ...s.ui, view: 'compare' } };
+    return {
+      ...s,
+      comparePins: nextPins,
+      ui: { ...s.ui, view: 'compare', sheetPlayerId: null }
+    };
   });
+}
+
+/** Open the Compare tab to review the pinned players. */
+export function openCompare(): void {
+  store.set(s =>
+    s.ui.view === 'compare' ? s : { ...s, ui: { ...s.ui, view: 'compare', sheetPlayerId: null } }
+  );
 }
 
 /** Pin the next available queue players and open Compare. */

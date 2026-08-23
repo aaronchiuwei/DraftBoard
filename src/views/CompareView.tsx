@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { AppState, Player } from '../types';
 import { CONSENSUS } from '../types';
 import { injuryFor } from '../data/injuries';
@@ -85,11 +85,21 @@ export function CompareView({ state }: { state: AppState }) {
 
   const showDecision = decision !== null;
   const canPinMore = pinned.length < MAX_COMPARE_PINS;
-  /** After two pins, the user can lock into the head-to-head without filling all four. */
-  const [focused, setFocused] = useState(false);
+  /**
+   * Lock into the head-to-head as soon as two are pinned. "Add another" opens
+   * the table again; crossing back to 2+ from below re-locks automatically.
+   */
+  const [focused, setFocused] = useState(() => pinned.length >= 2);
+  const prevPinned = useRef(pinned.length);
 
   useEffect(() => {
-    if (pinned.length < 2) setFocused(false);
+    const prev = prevPinned.current;
+    prevPinned.current = pinned.length;
+    if (pinned.length < 2) {
+      setFocused(false);
+      return;
+    }
+    if (prev < 2 && pinned.length >= 2) setFocused(true);
   }, [pinned.length]);
 
   const showTable = (canPinMore && !focused) || !showDecision;
