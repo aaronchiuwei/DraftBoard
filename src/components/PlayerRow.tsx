@@ -1,5 +1,7 @@
 import type { Player, RankSource, SourceKey } from '../types';
+import { injuryFor } from '../data/injuries';
 import { rankOf, valueFor } from '../domain/rankings';
+import { InjuryTag } from './InjuryTag';
 import { Rail } from './Rail';
 import { StarButton } from './StarButton';
 import styles from './PlayerRow.module.css';
@@ -32,6 +34,7 @@ export function PlayerRow({
   onSelect
 }: Props) {
   const primary = valueFor(player, selected, sourceIds);
+  const injury = injuryFor(player);
   const others = sources
     .filter(s => s.id !== selected)
     .map(s => ({ short: s.short, value: rankOf(player, s.id) }))
@@ -51,6 +54,7 @@ export function PlayerRow({
         <span class={styles.mid}>
           <span class={styles.nameLine}>
             <span class={styles.name}>{player.name}</span>
+            {injury && <InjuryTag report={injury} />}
             {queuePlace !== undefined && <span class={styles.queueChip}>Q{queuePlace}</span>}
           </span>
           <span class={styles.sub}>

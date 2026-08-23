@@ -57,6 +57,13 @@
   margin-top: 3px;
 }
 
+.injury {
+  color: var(--red);
+  font-size: 12px;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
 .ranks {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));

@@ -4,6 +4,7 @@ import { rankOf } from '../domain/rankings';
 import { survivalOdds } from '../domain/analytics';
 import { selectHorizon, selectPool, selectSourceIds, selectSources } from '../state/selectors';
 import { closeSheet, draftPlayer, toggleFlagged, toggleQueued, undraftPlayer } from '../state/app';
+import { injuryFor, injuryTooltip } from '../data/injuries';
 import { statsFor } from '../data/stats';
 import { Headshot } from './Headshot';
 import { StatTable } from './StatTable';
@@ -32,6 +33,7 @@ export function PlayerSheet({ state }: { state: AppState }) {
       ? survivalOdds(player, draft, pool, sourceIds, selectHorizon(state))
       : null;
   const stats = statsFor(player);
+  const injury = injuryFor(player);
 
   return (
     <div
@@ -52,6 +54,7 @@ export function PlayerSheet({ state }: { state: AppState }) {
               {' · '}
               {player.team}
             </div>
+            {injury && <div class={styles.injury}>{injuryTooltip(injury).replace(/\n/g, ' · ')}</div>}
           </div>
         </div>
 

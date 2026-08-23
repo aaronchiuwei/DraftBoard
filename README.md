@@ -21,6 +21,7 @@ npm test           # unit and integration tests
 npm run build      # typecheck, then build to dist/
 npm run preview    # serve the built output
 npm run depth      # re-pull every team's depth chart from ESPN
+npm run injuries   # re-pull the league injury report from ESPN
 npm run stats      # re-pull last season's stats and this season's projections
 ```
 
@@ -162,6 +163,19 @@ npm run depth -- --season 2027
 ```
 
 Two requests per team — the chart gives an ordered list of athlete ids, the roster turns those into names — then it writes `src/data/depth.2026.json` and prints a per-team count. Commit the result. The tab shows the pull date under the team name, because **a depth chart from three weeks ago is a guess**. Re-run it the morning of the draft.
+
+---
+
+## Injury reports
+
+Every player in the pool carries an ESPN injury tag when one exists: **Q**, **D**, **OUT**, **IR**, and the rest. The tag sits beside his name in Players, Queue, and Depth; hover (or long-press on a phone with a mouse) to see the injury, status, expected return date, and roughly how long he's out.
+
+```bash
+npm run injuries              # current season
+npm run injuries -- --season 2027
+```
+
+One request to ESPN's league injury report, then it writes `src/data/injuries.2026.json`. Commit the result. Like depth charts, this is baked in at build time — run it the morning of the draft and redeploy.
 
 ---
 
@@ -310,6 +324,7 @@ Headshots are the one exception, fetched from Sleeper's CDN and kept in a runtim
 - **No kickers or defenses on the Big Board**, so sorting by BIG in those positions returns nothing. Use another source.
 - **Ranks are a snapshot.** Pulled August 23, 2026. Import a fresher ADP if something moved.
 - **Depth charts are a snapshot too**, and a faster-moving one. Run `npm run depth` and redeploy before draft day. There is no in-app refresh, because there is nothing in the app proxying ESPN.
+- **Injury reports are a snapshot too.** Run `npm run injuries` alongside `npm run depth` before draft day.
 - **Projections are somebody else's opinion**, pulled once from Sleeper and baked in. They move through preseason; re-run `npm run stats` before draft day.
 - **Headshots need a connection the first time.** Ones you haven't opened before will be initials in a dead room.
 - **Depth charts cover the offense and the kicker only.** Offensive line, defense, and punt returners are dropped; nothing in this draft turns on the left guard.

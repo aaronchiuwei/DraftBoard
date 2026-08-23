@@ -1,5 +1,7 @@
 import type { AppState, Player } from '../types';
 import { Controls } from '../components/Controls';
+import { InjuryTag } from '../components/InjuryTag';
+import { injuryFor } from '../data/injuries';
 import { consensusOf, rankOf, spreadOf, type Spread } from '../domain/rankings';
 import { draftedIds } from '../domain/draft';
 import { openSheet, setCompareSort } from '../state/app';
@@ -81,7 +83,9 @@ export function CompareView({ state }: { state: AppState }) {
               </td>
             </tr>
           )}
-          {rows.slice(0, ROW_LIMIT).map(({ player, spread }) => (
+          {rows.slice(0, ROW_LIMIT).map(({ player, spread }) => {
+            const injury = injuryFor(player);
+            return (
             <tr
               key={player.id}
               class={taken.has(player.id) ? styles.gone : undefined}
@@ -92,6 +96,7 @@ export function CompareView({ state }: { state: AppState }) {
                   {player.pos}
                 </span>{' '}
                 {player.name}
+                {injury && <> <InjuryTag report={injury} /></>}
               </td>
               {sources.map(s => {
                 const v = rankOf(player, s.id);
@@ -118,7 +123,8 @@ export function CompareView({ state }: { state: AppState }) {
               })}
               <td class={styles.gap}>{spread.spread}</td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
       <div style={{ height: 24 }} />

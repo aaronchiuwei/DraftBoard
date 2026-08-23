@@ -8,10 +8,12 @@ import {
   resolvedTeam,
   type ResolvedEntry
 } from '../data/depth';
+import { injuryForName, reportFromTag } from '../data/injuries';
 import { valueFor } from '../domain/rankings';
 import { draftedIds } from '../domain/draft';
 import { openSheet, setDepthTeam } from '../state/app';
 import { selectFlagged, selectPool, selectSourceIds, selectSources } from '../state/selectors';
+import { InjuryTag } from '../components/InjuryTag';
 import { StarButton } from '../components/StarButton';
 import styles from './DepthView.module.css';
 
@@ -26,8 +28,10 @@ interface RowProps {
   queuePlace: number | undefined;
 }
 
-function DepthRow({ entry, slot, rank, rankLabel, gone, flagged, queuePlace }: RowProps) {
+function DepthRow({ entry, slot, rank, rankLabel, gone, flagged, queuePlace, teamCode }: RowProps & { teamCode: string }) {
   const id = entry.playerId;
+  const injury =
+    injuryForName(entry.name, teamCode) ?? (entry.status ? reportFromTag(entry.status) : null);
   const classes = [
     styles.row,
     gone ? styles.gone : '',
@@ -44,7 +48,7 @@ function DepthRow({ entry, slot, rank, rankLabel, gone, flagged, queuePlace }: R
         <span class={styles.nameLine}>
           <span class={styles.name}>{entry.name}</span>
           {entry.pos && <span class={styles.tag}>{entry.pos}</span>}
-          {entry.status && <span class={`${styles.tag} ${styles.hurt}`}>{entry.status}</span>}
+          {injury && <InjuryTag report={injury} />}
           {queuePlace !== undefined && <span class={styles.queueChip}>Q{queuePlace}</span>}
         </span>
         {entry.jersey && <span class={styles.sub}>#{entry.jersey}</span>}
@@ -141,6 +145,7 @@ export function DepthView({ state }: { state: AppState }) {
                     queuePlace={
                       entry.playerId === null ? undefined : queue.get(entry.playerId)
                     }
+                    teamCode={code}
                   />
                 );
               })}

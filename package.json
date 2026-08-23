@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "depth": "node scripts/fetch-depth.mjs",
+    "injuries": "node scripts/fetch-injuries.mjs",
     "stats": "node scripts/fetch-stats.mjs"
   },
   "repository": {
