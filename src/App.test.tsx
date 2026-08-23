@@ -256,7 +256,7 @@ describe('tabs', () => {
     await startDraft();
     click(button('Compare'));
     const headers = screen.getAllByRole('columnheader').map(h => h.textContent);
-    expect(headers).toEqual(['Player', 'NFFC', 'BIG', 'ESPN', 'YHOO', 'SLEEP', 'Gap']);
+    expect(headers).toEqual(['Player', 'NFFC', 'BIG', 'CLAUDE', 'ESPN', 'YHOO', 'SLEEP', 'Gap']);
   });
 });
 

@@ -12,9 +12,9 @@ interface Props {
 }
 
 /**
- * Four dots on a short axis: left of centre means that source is higher on him
- * than the consensus is. A tight cluster is agreement, a spread is a fight.
- * It exists so a contested player is visible while scrolling.
+ * One dot per active source on a short axis: left of centre means that source
+ * is higher on him than the consensus is. A tight cluster is agreement, a
+ * spread is a fight. It exists so a contested player is visible while scrolling.
  */
 export function Rail({ player, sources }: Props) {
   const dots = railDots(player, sources);

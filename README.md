@@ -270,7 +270,7 @@ Names are matched with punctuation, accents, and generational suffixes folded, s
 
 ## The data
 
-300 players. NFFC, ESPN, and Sleeper ranks come from each platform's ADP, August 23, 2026; Yahoo is the Yahoo analysts' consensus full-PPR board; the Big Board is a 262-player PPR board (Claude blend of NFFC/Sleeper consensus plus a value model). AVG is the mean of whichever active sources rank a player, computed at runtime.
+300 players. NFFC, ESPN, and Sleeper ranks come from each platform's ADP, August 23, 2026; Yahoo is the Yahoo analysts' consensus full-PPR board; the Big Board is a 150-player PPR board; Claude is a separate 262-player PPR board (blend of NFFC/Sleeper consensus plus a value model). AVG is the mean of whichever active sources rank a player, computed at runtime.
 
 To refresh the pool, edit `src/data/players.2026.json` or add a new file alongside it. Records are `{id, name, team, pos, ranks}`, where `ranks` maps source id to rank and omits sources that don't rank him. Malformed records throw at boot rather than showing up as a blank cell mid-draft.
 
@@ -285,6 +285,7 @@ The most important caveat in the project:
 | Yahoo | Full PPR |
 | Sleeper | Full PPR |
 | Big Board | Full PPR |
+| Claude | Full PPR |
 
 Yahoo is analyst consensus (Boone, Harmon, Norris, Pianowski, Smyth, Winks), not Yahoo ADP, so a Yahoo gap is opinion rather than format. Sleeper's default rooms are half-PPR; the Sleeper column is their PPR ADP, not a typical Sleeper room. NFFC embeds kickers and defenses in its overall list, so below roughly pick 140 a small NFFC gap is an artifact. ESPN ranks kickers and defenses far higher than NFFC does, which is genuine and is why K and DEF dominate the disagreement sort unless you filter by position.
 
@@ -325,7 +326,7 @@ Headshots are the one exception, fetched from Sleeper's CDN and kept in a runtim
 
 ## Known limitations
 
-- **No kickers or defenses on the Big Board**, so sorting by BIG in those positions returns nothing. Use another source.
+- **No kickers or defenses on the Big Board or Claude**, so sorting by BIG or CLAUDE in those positions returns nothing. Use another source.
 - **Ranks are a snapshot.** Pulled August 23, 2026. Import a fresher ADP if something moved.
 - **Depth charts are a snapshot too**, and a faster-moving one. Run `npm run depth` and redeploy before draft day. There is no in-app refresh, because there is nothing in the app proxying ESPN.
 - **Injury reports are a snapshot too.** Run `npm run injuries` alongside `npm run depth` before draft day. They merge ESPN return dates with Sleeper status tags.
