@@ -11,6 +11,7 @@ import {
   saveState,
   storageKey,
   toPersisted,
+  claimOrphanedDeviceState,
   writeLocalAccounts
 } from './persistence';
 
@@ -78,6 +79,32 @@ describe('per-account storage', () => {
     expect(loadState('user-b').draft.picks).toEqual([9]);
   });
 
+  it('keeps queue, flags, and UI settings apart per account', () => {
+    const a = defaultState();
+    a.queue = [1, 2];
+    a.flagged = [3];
+    a.ui.source = 'espn';
+    a.disabledSources = ['yahoo'];
+
+    const b = defaultState();
+    b.queue = [10];
+    b.flagged = [];
+    b.ui.source = 'sleeper';
+
+    saveState(a, 'user-a');
+    saveState(b, 'user-b');
+
+    expect(loadState('user-a').queue).toEqual([1, 2]);
+    expect(loadState('user-a').flagged).toEqual([3]);
+    expect(loadState('user-a').ui.source).toBe('espn');
+    expect(loadState('user-a').disabledSources).toEqual(['yahoo']);
+
+    expect(loadState('user-b').queue).toEqual([10]);
+    expect(loadState('user-b').flagged).toEqual([]);
+    expect(loadState('user-b').ui.source).toBe('sleeper');
+    expect(loadState('user-b').disabledSources).toEqual([]);
+  });
+
   it('leaves the device-local draft alone when an account saves', () => {
     saveState(withPicks([5, 6]), null);
     saveState(withPicks([7]), 'user-c');
@@ -87,6 +114,14 @@ describe('per-account storage', () => {
   it('starts an account that has never saved from defaults', () => {
     expect(loadState('nobody').draft.ready).toBe(false);
     expect(readPersisted('nobody')).toBeNull();
+  });
+
+  it('claims a pre-account device draft once, then clears it', () => {
+    saveState(withPicks([1, 2]), null);
+    const claimed = claimOrphanedDeviceState();
+    expect(claimed?.draft.picks).toEqual([1, 2]);
+    expect(readPersisted(null)).toBeNull();
+    expect(claimOrphanedDeviceState()).toBeNull();
   });
 });
 

@@ -34,6 +34,11 @@ export function useApp(): AppState {
    keeps saves off the interaction path without risking a lost pick. */
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 store.subscribe(() => {
+  if (activeUser === null) {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = null;
+    return;
+  }
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => saveState(store.get(), activeUser), 150);
 });
@@ -42,12 +47,15 @@ store.subscribe(() => {
 export function flushSave(): void {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = null;
+  if (activeUser === null) return;
   saveState(store.get(), activeUser);
 }
 
 /**
  * Hands the store to another account. The outgoing draft is written under its
- * own key first, so signing out and back in returns to it untouched.
+ * own key first, so signing out and back in returns to it untouched. Signed-out
+ * state is not written to the shared device slot — that slot is only for
+ * claiming a pre-account draft once.
  */
 export function adoptUser(userId: string | null, next: AppState): void {
   flushSave();

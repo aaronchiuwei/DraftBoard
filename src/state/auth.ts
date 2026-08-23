@@ -12,6 +12,7 @@ import {
   readPersisted,
   savedAtOf,
   toPersisted,
+  claimOrphanedDeviceState,
   writeLocalAccounts,
   writeLocalOnly,
   type Persisted
@@ -71,9 +72,7 @@ let mergedUser: string | null = null;
 
 function pickWinner(own: Persisted | null, remote: Persisted | null): Persisted | null {
   if (own && remote) return savedAtOf(remote) > savedAtOf(own) ? remote : own;
-  // an account with nothing of its own adopts the draft already on the device,
-  // so signing up mid-prep does not throw away the prep
-  return own ?? remote ?? readPersisted(null);
+  return own ?? remote;
 }
 
 async function mergeWithCloud(userId: string, own: Persisted | null): Promise<void> {
@@ -142,7 +141,7 @@ async function applySession(session: Session | null): Promise<void> {
 
   if (!user) {
     mergedUser = null;
-    if (activeUserId() !== null) adoptUser(null, loadState(null));
+    if (activeUserId() !== null) adoptUser(null, defaultState());
     patch({ status: 'signedOut', userId: null, email: null, sync: 'idle' });
     return;
   }
@@ -155,10 +154,12 @@ async function applySession(session: Session | null): Promise<void> {
   const own = readPersisted(userId);
 
   if (activeUserId() !== userId) {
-    adoptUser(userId, fromPersisted(own ?? readPersisted(null)) ?? defaultState());
+    const next =
+      fromPersisted(own) ?? claimOrphanedDeviceState() ?? defaultState();
+    adoptUser(userId, next);
   }
 
-  await mergeWithCloud(userId, own);
+  await mergeWithCloud(userId, own ?? toPersisted(appStore.get()));
 }
 
 export async function initAuth(): Promise<void> {
@@ -296,8 +297,9 @@ async function localAuth(mode: 'in' | 'up', email: string, password: string): Pr
         ...accounts,
         { id, email: normalized, salt, hash: await hashPassword(password, salt) }
       ]);
-      const incoming = fromPersisted(readPersisted(null)) ?? appStore.get();
-      adoptUser(id, incoming);
+      // a brand-new account starts clean unless this device still has a draft
+      // from before accounts existed — that is claimed once, then cleared
+      adoptUser(id, claimOrphanedDeviceState() ?? defaultState());
       patch({ status: 'signedIn', userId: id, email: normalized, error: null });
       return true;
     }

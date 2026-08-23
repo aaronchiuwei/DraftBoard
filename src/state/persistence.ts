@@ -294,6 +294,32 @@ export function saveState(state: AppState, userId: string | null = null): void {
 }
 
 /**
+ * One-time claim of a draft left on the shared device slot (or the pre-account
+ * v1 key). Used when a brand-new account has nothing of its own, then cleared
+ * so the next account on this phone cannot inherit queue, flags, or settings.
+ */
+export function claimOrphanedDeviceState(): AppState | null {
+  const device = fromPersisted(readPersisted(null));
+  if (device) {
+    removeRaw(storageKey(null));
+    return device;
+  }
+
+  const legacyRaw = readRaw(LEGACY_KEY);
+  if (!legacyRaw) return null;
+  try {
+    const draft = migrateLegacy(JSON.parse(legacyRaw) as LegacyV1);
+    removeRaw(LEGACY_KEY);
+    if (!draft) return null;
+    const base = defaultState();
+    return { ...base, draft, ui: { ...base.ui, view: draft.ready ? 'players' : 'setup' } };
+  } catch {
+    removeRaw(LEGACY_KEY);
+    return null;
+  }
+}
+
+/**
  * Browsers evict an ordinary site's localStorage under pressure, and Safari
  * clears it after seven days away. A granted persist exempts this origin.
  */

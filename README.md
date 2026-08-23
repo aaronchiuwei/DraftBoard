@@ -222,7 +222,9 @@ You cannot draft without an account. A remembered session opens straight into yo
 
 Local storage stays the source of truth during a draft; the cloud is a sync target, pushed on a 2.5-second debounce so a run of picks is one request.
 
-On sign-in the device and the cloud are reconciled by which was written last, and every payload carries the timestamp that decides it. Nothing is ever half-applied: one copy wins whole. If the pull fails, pushing stays switched off until it succeeds, so a stale device can't overwrite a newer draft from another one — it retries when the connection returns. An account with nothing saved anywhere adopts whatever draft is already on the device.
+On sign-in the device and the cloud are reconciled by which was written last, and every payload carries the timestamp that decides it. Nothing is ever half-applied: one copy wins whole. If the pull fails, pushing stays switched off until it succeeds, so a stale device can't overwrite a newer draft from another one — it retries when the connection returns.
+
+Each account keeps its own league settings, queue, starred players, muted sources, and picks. A draft left on the device from before accounts existed is claimed once by the next new account, then cleared so it cannot leak to anyone else.
 
 Two accounts on one phone each get their own slot.
 

@@ -770,6 +770,8 @@ describe('local accounts', () => {
 
     click(button('Start draft'));
     draft('Jahmyr Gibbs');
+    enqueue('Bijan Robinson');
+    click(button('Flag Ja\'Marr Chase'));
     expect(onClockLabel()).toBe('1.02');
 
     click(button('Setup'));
@@ -780,6 +782,10 @@ describe('local accounts', () => {
     click(button('Start draft'));
     expect(onClockLabel()).toBe('1.01');
     expect(screen.getByText('Jahmyr Gibbs')).toBeTruthy();
+    click(button('Queue'));
+    expect(screen.getByText(/Nothing queued yet/)).toBeTruthy();
+    click(button('Players'));
+    expect(rowBox("Ja'Marr Chase")?.className).not.toContain('flagged');
 
     click(button('Setup'));
     click(button('Sign out'));
@@ -796,6 +802,9 @@ describe('local accounts', () => {
     click(button('Players'));
     expect(onClockLabel()).toBe('1.02');
     expect(screen.queryByText('Jahmyr Gibbs')).toBeNull();
+    expect(rowBox("Ja'Marr Chase")?.className).toContain('flagged');
+    click(button('Queue'));
+    expect(screen.getByText('Bijan Robinson')).toBeTruthy();
   });
 
   it('rejects a wrong password', async () => {
