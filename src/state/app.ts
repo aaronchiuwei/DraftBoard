@@ -10,7 +10,7 @@ import type {
 import { createStore, useStoreState } from './store';
 import { loadState, readLastUser, saveState, writeLastUser } from './persistence';
 import { normalizeLeague } from '../domain/roster';
-import { defaultTeamNames, draftedIds, isDraftOver, totalPicks } from '../domain/draft';
+import { defaultTeamNames, draftedIds, fallbackTeamName, isDraftOver, totalPicks } from '../domain/draft';
 import { MAX_COMPARE_PINS } from '../domain/compare';
 
 /**
@@ -247,13 +247,36 @@ export function setMySlot(mySlot: number): void {
 export function setTeamName(index: number, name: string): void {
   store.set(s => {
     const names = [...s.draft.league.names];
-    names[index] = name.trim() || `Team ${index + 1}`;
+    names[index] = name;
+    return { ...s, draft: { ...s.draft, league: { ...s.draft.league, names } } };
+  });
+}
+
+/** Fill in a default when the field is left blank, and trim whitespace. */
+export function commitTeamName(index: number): void {
+  store.set(s => {
+    const names = [...s.draft.league.names];
+    const trimmed = names[index]?.trim() ?? '';
+    const next = trimmed || fallbackTeamName(index, s.draft.league.mySlot);
+    if (names[index] === next) return s;
+    names[index] = next;
     return { ...s, draft: { ...s.draft, league: { ...s.draft.league, names } } };
   });
 }
 
 export function markReady(): void {
-  store.set(s => ({ ...s, draft: { ...s.draft, ready: true }, ui: { ...s.ui, view: 'players' } }));
+  store.set(s => {
+    const { league } = s.draft;
+    const names = league.names.map((name, i) => {
+      const trimmed = name?.trim() ?? '';
+      return trimmed || fallbackTeamName(i, league.mySlot);
+    });
+    return {
+      ...s,
+      draft: { ...s.draft, ready: true, league: { ...league, names } },
+      ui: { ...s.ui, view: 'players' }
+    };
+  });
 }
 
 /* -------------------------------------------------------------- sources */

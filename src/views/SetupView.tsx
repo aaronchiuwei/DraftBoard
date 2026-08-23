@@ -7,6 +7,7 @@ import {
   resetPicks,
   setMySlot,
   setRounds,
+  commitTeamName,
   setTeamName,
   setTeams
 } from '../state/app';
@@ -112,8 +113,9 @@ export function SetupView({ state }: { state: AppState }) {
                 type="text"
                 maxLength={18}
                 class={i === league.mySlot ? styles.me : undefined}
-                value={teamName(league, i)}
+                value={league.names[i] ?? ''}
                 onInput={e => setTeamName(i, (e.target as HTMLInputElement).value)}
+                onBlur={() => commitTeamName(i)}
               />
             </div>
           ))}

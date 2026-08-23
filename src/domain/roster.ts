@@ -100,7 +100,10 @@ export function normalizeLeague(league: LeagueSettings): LeagueSettings {
   const mySlot = Math.min(Math.max(league.mySlot, 0), league.teams - 1);
   const names = Array.from(
     { length: league.teams },
-    (_, i) => league.names[i] ?? (i === mySlot ? 'My Team' : `Team ${i + 1}`)
+    (_, i) => {
+      const name = league.names[i]?.trim();
+      return name || (i === mySlot ? 'My Team' : `Team ${i + 1}`);
+    }
   );
   return { ...league, mySlot, names };
 }

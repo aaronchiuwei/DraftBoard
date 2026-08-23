@@ -90,12 +90,17 @@ export function pickMarkersFor(draft: DraftState, team: number): PickMarker[] {
   }));
 }
 
+export function fallbackTeamName(team: number, mySlot: number): string {
+  return team === mySlot ? 'My Team' : `Team ${team + 1}`;
+}
+
 export function teamName(league: LeagueSettings, team: number): string {
-  return league.names[team] ?? `Team ${team + 1}`;
+  const name = league.names[team]?.trim();
+  return name || fallbackTeamName(team, league.mySlot);
 }
 
 export function defaultTeamNames(count: number, mySlot: number): string[] {
-  return Array.from({ length: count }, (_, i) => (i === mySlot ? 'My Team' : `Team ${i + 1}`));
+  return Array.from({ length: count }, (_, i) => fallbackTeamName(i, mySlot));
 }
 
 /** Player ids taken so far, for "is this player gone" lookups. */
