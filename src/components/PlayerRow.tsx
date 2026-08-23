@@ -56,11 +56,6 @@ export function PlayerRow({
       <button class={styles.open} onClick={() => onSelect(player.id)}>
         <span class={styles.rankCol}>
           <span class={styles.rank}>{formatRank(primary)}</span>
-          {projected !== null && (
-            <span class={styles.proj} title={`${PROJECTED_SEASON} projected PPR points`}>
-              {formatStat(projected)}
-            </span>
-          )}
         </span>
         <span class={styles.pos} style={{ background: `var(--${player.pos})` }}>
           {player.pos}
@@ -87,6 +82,14 @@ export function PlayerRow({
                 {o.short} <b>{o.value}</b>{'  '}
               </span>
             ))}
+            {projected !== null && (
+              <>
+                {others.length > 0 && ' · '}
+                <span class={styles.proj} title={`${PROJECTED_SEASON} projected PPR points`}>
+                  {formatStat(projected)}
+                </span>
+              </>
+            )}
           </span>
         </span>
         <Rail player={player} sources={sources} />
