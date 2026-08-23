@@ -1,7 +1,9 @@
 import type { Player, RankSource, SourceKey } from '../types';
 import { injuryFor } from '../data/injuries';
+import { depthRoleFor } from '../data/depth';
 import { headshotFor, isRookie } from '../data/stats';
 import { rankOf, valueFor } from '../domain/rankings';
+import { DepthRoleTag } from './DepthRoleTag';
 import { Headshot } from './Headshot';
 import { InjuryTag } from './InjuryTag';
 import { RookieTag } from './RookieTag';
@@ -38,6 +40,7 @@ export function PlayerRow({
 }: Props) {
   const primary = valueFor(player, selected, sourceIds);
   const injury = injuryFor(player);
+  const depthRole = depthRoleFor(player);
   const others = sources
     .filter(s => s.id !== selected)
     .map(s => ({ short: s.short, value: rankOf(player, s.id) }))
@@ -63,6 +66,7 @@ export function PlayerRow({
         <span class={styles.mid}>
           <span class={styles.nameLine}>
             <span class={styles.name}>{player.name}</span>
+            {depthRole && <DepthRoleTag role={depthRole} />}
             {isRookie(player) && <RookieTag />}
             {injury && <InjuryTag report={injury} />}
             {queuePlace !== undefined && <span class={styles.queueChip}>Q{queuePlace}</span>}

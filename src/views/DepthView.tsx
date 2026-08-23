@@ -14,6 +14,7 @@ import { valueFor } from '../domain/rankings';
 import { draftedIds } from '../domain/draft';
 import { openSheet, setDepthTeam } from '../state/app';
 import { selectFlagged, selectPool, selectSourceIds, selectSources } from '../state/selectors';
+import { DepthRoleTag } from '../components/DepthRoleTag';
 import { Headshot } from '../components/Headshot';
 import { InjuryTag } from '../components/InjuryTag';
 import { RookieTag } from '../components/RookieTag';
@@ -58,6 +59,7 @@ function DepthRow({ entry, player, groupPos, slot, rank, rankLabel, gone, flagge
       <span class={styles.mid}>
         <span class={styles.nameLine}>
           <span class={styles.name}>{entry.name}</span>
+          <DepthRoleTag role={`${groupPos}${slot}`} />
           {player && isRookie(player) && <RookieTag />}
           {entry.pos && <span class={styles.tag}>{entry.pos}</span>}
           {injury && <InjuryTag report={injury} />}

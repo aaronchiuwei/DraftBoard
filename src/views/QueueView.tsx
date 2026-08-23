@@ -2,6 +2,7 @@ import type { AppState } from '../types';
 import { rankOf } from '../domain/rankings';
 import { pickLabel } from '../domain/draft';
 import { injuryFor } from '../data/injuries';
+import { depthRoleFor } from '../data/depth';
 import { headshotFor, isRookie } from '../data/stats';
 import {
   clearQueue,
@@ -11,6 +12,7 @@ import {
   unqueuePlayer
 } from '../state/app';
 import { selectFlagged, selectQueue, selectSources, type QueueEntry } from '../state/selectors';
+import { DepthRoleTag } from '../components/DepthRoleTag';
 import { InjuryTag } from '../components/InjuryTag';
 import { Headshot } from '../components/Headshot';
 import { RookieTag } from '../components/RookieTag';
@@ -30,6 +32,7 @@ interface RowProps {
 function QueueRow({ entry, flagged, first, last, rank, takenAt, teams }: RowProps) {
   const { player, place, taken } = entry;
   const injury = injuryFor(player);
+  const depthRole = depthRoleFor(player);
   const classes = [styles.row, taken ? styles.taken : '', flagged ? styles.flagged : '']
     .filter(Boolean)
     .join(' ');
@@ -51,6 +54,7 @@ function QueueRow({ entry, flagged, first, last, rank, takenAt, teams }: RowProp
           <span class={styles.nameLine}>
             {flagged && <span class={styles.star}>★</span>}
             <span class={styles.name}>{player.name}</span>
+            {depthRole && <DepthRoleTag role={depthRole} />}
             {isRookie(player) && <RookieTag />}
             {injury && <InjuryTag report={injury} />}
           </span>

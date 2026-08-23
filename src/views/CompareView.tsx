@@ -1,9 +1,11 @@
 import type { AppState, Player } from '../types';
 import { Controls } from '../components/Controls';
+import { DepthRoleTag } from '../components/DepthRoleTag';
 import { Headshot } from '../components/Headshot';
 import { InjuryTag } from '../components/InjuryTag';
 import { RookieTag } from '../components/RookieTag';
 import { injuryFor } from '../data/injuries';
+import { depthRoleFor } from '../data/depth';
 import { headshotFor, isRookie } from '../data/stats';
 import { consensusOf, rankOf, spreadOf, type Spread } from '../domain/rankings';
 import { draftedIds } from '../domain/draft';
@@ -88,6 +90,7 @@ export function CompareView({ state }: { state: AppState }) {
           )}
           {rows.slice(0, ROW_LIMIT).map(({ player, spread }) => {
             const injury = injuryFor(player);
+            const depthRole = depthRoleFor(player);
             return (
             <tr
               key={player.id}
@@ -107,6 +110,7 @@ export function CompareView({ state }: { state: AppState }) {
                       {player.pos}
                     </span>{' '}
                     {player.name}
+                    {depthRole && <> <DepthRoleTag role={depthRole} /></>}
                     {isRookie(player) && <> <RookieTag /></>}
                     {injury && <> <InjuryTag report={injury} /></>}
                   </span>

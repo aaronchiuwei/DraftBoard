@@ -132,3 +132,31 @@ export function resolvedTeam(code: string): ResolvedTeam | null {
 }
 
 export const DEFAULT_DEPTH_TEAM = DEPTH_TEAMS[0]?.code ?? 'ARI';
+
+/** Precomputed depth-chart slot per pool player, e.g. "WR1", keyed by player id. */
+function buildDepthRoleIndex(): ReadonlyMap<number, string> {
+  const poolById = new Map(BASE_PLAYERS.map(p => [p.id, p]));
+  const index = new Map<number, string>();
+
+  for (const team of DEPTH_TEAMS) {
+    const resolved = resolve(team);
+    for (const group of resolved.groups) {
+      for (let i = 0; i < group.players.length; i++) {
+        const entry = group.players[i];
+        if (!entry || entry.playerId === null) continue;
+        const player = poolById.get(entry.playerId);
+        if (player?.team === team.code) {
+          index.set(entry.playerId, `${group.pos}${i + 1}`);
+        }
+      }
+    }
+  }
+  return index;
+}
+
+const DEPTH_ROLE_BY_PLAYER_ID = buildDepthRoleIndex();
+
+/** Where a player sits on his team's ESPN depth chart, or null when he isn't listed. */
+export function depthRoleFor(player: Player): string | null {
+  return DEPTH_ROLE_BY_PLAYER_ID.get(player.id) ?? null;
+}

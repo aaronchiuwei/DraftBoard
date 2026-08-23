@@ -5,7 +5,9 @@ import { survivalOdds } from '../domain/analytics';
 import { selectHorizon, selectPool, selectSourceIds, selectSources } from '../state/selectors';
 import { closeSheet, draftPlayer, toggleFlagged, toggleQueued, undraftPlayer } from '../state/app';
 import { injuryFor, injuryTooltip } from '../data/injuries';
+import { depthRoleFor } from '../data/depth';
 import { statsFor, isRookie } from '../data/stats';
+import { DepthRoleTag } from './DepthRoleTag';
 import { Headshot } from './Headshot';
 import { RookieTag } from './RookieTag';
 import { StatTable } from './StatTable';
@@ -35,6 +37,7 @@ export function PlayerSheet({ state }: { state: AppState }) {
       : null;
   const stats = statsFor(player);
   const injury = injuryFor(player);
+  const depthRole = depthRoleFor(player);
 
   return (
     <div
@@ -51,6 +54,7 @@ export function PlayerSheet({ state }: { state: AppState }) {
           <div class={styles.headerText}>
             <div class={styles.nameLine}>
               <div class={styles.name}>{player.name}</div>
+              {depthRole && <DepthRoleTag role={depthRole} />}
               {isRookie(player) && <RookieTag />}
             </div>
             <div class={styles.meta}>
