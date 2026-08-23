@@ -8,6 +8,8 @@ Built for a specific league: **1 QB, 2 RB, 2 WR, 1 TE, 2 FLEX, 1 DEF, 1 K**, sna
 
 Preact + TypeScript, built with Vite, deployed as a static site on Vercel.
 
+**Live site:** [fantasy-football-nine-zeta.vercel.app](https://fantasy-football-nine-zeta.vercel.app/)
+
 ---
 
 ## Running it
@@ -28,7 +30,7 @@ npm run stats      # re-pull last season's stats and this season's projections
 
 ## Getting it on your phone
 
-1. Open the deployed URL on your phone.
+1. Open [fantasy-football-nine-zeta.vercel.app](https://fantasy-football-nine-zeta.vercel.app/) on your phone.
 2. **iPhone:** Share → Add to Home Screen. **Android:** Chrome menu → Add to Home screen.
 3. Open it once from the home screen icon before draft day, to confirm it loads and to run through setup.
 

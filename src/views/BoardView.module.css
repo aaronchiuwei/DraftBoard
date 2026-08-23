@@ -1,10 +1,14 @@
 .wrap {
   overflow: auto;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
   padding-bottom: 24px;
 }
 
 .board {
+  width: 100%;
+  min-width: 900px;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -14,15 +18,13 @@
   top: 0;
   z-index: 6;
   background: var(--panel);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
-  padding: 8px 4px;
+  padding: 8px 6px;
   border-bottom: 1px solid var(--line);
   font-weight: 700;
-  min-width: 92px;
-  max-width: 92px;
 }
 
 .board th.me {
@@ -34,8 +36,7 @@
   left: 0;
   z-index: 7;
   background: var(--panel);
-  min-width: 34px;
-  max-width: 34px;
+  width: 34px;
   border-right: 1px solid var(--line);
 }
 
@@ -51,13 +52,12 @@
   padding: 0 8px;
   border-right: 1px solid var(--line);
   text-align: center;
+  width: 34px;
 }
 
 .cell {
-  min-width: 92px;
-  max-width: 92px;
-  height: 44px;
-  padding: 4px 5px;
+  height: 48px;
+  padding: 5px 6px;
   border-bottom: 1px solid rgba(46, 56, 70, 0.5);
   border-right: 1px solid rgba(46, 56, 70, 0.35);
   vertical-align: middle;
@@ -65,7 +65,7 @@
 }
 
 .cell .name {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
   overflow: hidden;
