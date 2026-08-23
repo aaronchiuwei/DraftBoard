@@ -10,6 +10,8 @@ export interface InjuryReport {
   status: string;
   /** Body part / type when ESPN provides it: Knee, Groin, … */
   injury?: string;
+  /** ISO date ESPN last updated the injury report. */
+  injuryDate?: string;
   /** ISO date ESPN expects the player back, when known. */
   returnDate?: string;
 }
@@ -20,6 +22,7 @@ interface RawInjuryEntry {
   tag: string;
   status: string;
   injury?: string;
+  injuryDate?: string;
   returnDate?: string;
 }
 
@@ -42,23 +45,51 @@ export const INJURIES_SOURCE = raw.source;
 
 const MS_PER_DAY = 86_400_000;
 
-/** Days from the snapshot date to returnDate; negative means already past. */
-export function daysUntilReturn(returnDate: string, from = INJURIES_FETCHED_AT): number {
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Days from `from` through `to` (both ISO dates). */
+export function daysBetween(from: string, to: string): number {
   const start = new Date(`${from}T12:00:00`);
-  const end = new Date(`${returnDate}T12:00:00`);
+  const end = new Date(`${to}T12:00:00`);
   return Math.round((end.getTime() - start.getTime()) / MS_PER_DAY);
 }
 
-/** Human-readable duration for a tooltip: "~5 days", "~3 weeks", … */
-export function formatOutDuration(returnDate: string, from = INJURIES_FETCHED_AT): string {
+/** Days from a reference date to returnDate. */
+export function daysUntilReturn(returnDate: string, from = todayISO()): number {
+  return daysBetween(from, returnDate);
+}
+
+/** How long ESPN's return date is from today — not total time missed. */
+export function formatBackIn(returnDate: string, from = todayISO()): string {
   const days = daysUntilReturn(returnDate, from);
-  if (days <= 0) return 'Day-to-day';
-  if (days === 1) return '~1 day';
-  if (days < 14) return `~${days} days`;
+  if (days < 0) return 'Return date passed';
+  if (days === 0) return 'Back today';
+  if (days === 1) return 'Back in ~1 day';
+  if (days < 14) return `Back in ~${days} days`;
   const weeks = Math.round(days / 7);
-  if (weeks < 8) return weeks === 1 ? '~1 week' : `~${weeks} weeks`;
+  if (weeks < 8) return weeks === 1 ? 'Back in ~1 week' : `Back in ~${weeks} weeks`;
   const months = Math.round(days / 30);
-  return months === 1 ? '~1 month' : `~${months} months`;
+  return months === 1 ? 'Back in ~1 month' : `Back in ~${months} months`;
+}
+
+/** Days since ESPN's injury report date. */
+export function formatOutSince(injuryDate: string, from = todayISO()): string {
+  const days = daysBetween(injuryDate, from);
+  if (days <= 0) return 'Reported today';
+  if (days === 1) return 'Out ~1 day';
+  if (days < 14) return `Out ~${days} days`;
+  const weeks = Math.round(days / 7);
+  if (weeks < 8) return weeks === 1 ? 'Out ~1 week' : `Out ~${weeks} weeks`;
+  const months = Math.round(days / 30);
+  return months === 1 ? 'Out ~1 month' : `Out ~${months} months`;
+}
+
+
+function formatInjuryDate(iso: string): string {
+  const d = new Date(`${iso}T12:00:00`);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function formatReturnDate(iso: string): string {
@@ -66,14 +97,17 @@ function formatReturnDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-/** Two-line tooltip: expected return + time out. */
+/** Tooltip lines: injury, status, time out, expected return. */
 export function injuryTooltip(report: InjuryReport): string {
   const lines: string[] = [];
   if (report.injury) lines.push(report.injury);
   lines.push(report.status);
+  if (report.injuryDate) {
+    lines.push(`Out since ${formatInjuryDate(report.injuryDate)} · ${formatOutSince(report.injuryDate)}`);
+  }
   if (report.returnDate) {
     lines.push(`Expected back ${formatReturnDate(report.returnDate)}`);
-    lines.push(formatOutDuration(report.returnDate));
+    lines.push(formatBackIn(report.returnDate));
   }
   return lines.join('\n');
 }
@@ -106,6 +140,7 @@ function toReport(entry: RawInjuryEntry): InjuryReport {
     tag: entry.tag,
     status: entry.status,
     ...(entry.injury ? { injury: entry.injury } : {}),
+    ...(entry.injuryDate ? { injuryDate: entry.injuryDate } : {}),
     ...(entry.returnDate ? { returnDate: entry.returnDate } : {})
   };
 }

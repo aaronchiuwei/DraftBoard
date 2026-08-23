@@ -94,6 +94,7 @@ async function main() {
         tag,
         status: inj.status,
         ...(injuryLabel(details) ? { injury: injuryLabel(details) } : {}),
+        ...(inj.date ? { injuryDate: inj.date.slice(0, 10) } : {}),
         ...(details.returnDate ? { returnDate: details.returnDate } : {})
       });
     }

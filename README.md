@@ -168,7 +168,9 @@ Two requests per team — the chart gives an ordered list of athlete ids, the ro
 
 ## Injury reports
 
-Every player in the pool carries an ESPN injury tag when one exists: **Q**, **D**, **OUT**, **IR**, and the rest. The tag sits beside his name in Players, Queue, and Depth; hover (or long-press on a phone with a mouse) to see the injury, status, expected return date, and roughly how long he's out.
+Every player in the pool carries an ESPN injury tag when one exists: **Q**, **D**, **OUT**, **IR**, and the rest. The tag sits beside his name in Players, Queue, and Depth; hover to see the injury, status, how long he's been out, and when ESPN expects him back.
+
+ESPN's return date is often the **next game window** for Questionable tags (opening week for many players in August), not a full recovery timeline. A player listed Q with "Back in ~5 days" may still be a week-to-week concern — read the injury line and the "Out since" date together.
 
 ```bash
 npm run injuries              # current season
