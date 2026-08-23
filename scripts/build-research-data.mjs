@@ -168,13 +168,19 @@ function normalizeName(value) {
     .replace(/[^a-z]/g, '');
 }
 
+function stripSuffix(name) {
+  return (name ?? '').replace(/\s+(jr\.?|sr\.?|ii|iii|iv|v)$/i, '').trim();
+}
+
 function findPlayerId(name) {
   const key = normalizeName(name);
+  const keyStripped = normalizeName(stripSuffix(name));
+
   for (const p of pool.players) {
-    if (normalizeName(p.name) === key) return p.id;
+    const poolKey = normalizeName(p.name);
+    const poolKeyStripped = normalizeName(stripSuffix(p.name));
+    if (poolKey === key || poolKeyStripped === keyStripped) return p.id;
   }
-  const matches = pool.players.filter(p => normalizeName(p.name).includes(key.slice(0, 8)));
-  if (matches.length === 1) return matches[0].id;
   return null;
 }
 
@@ -189,8 +195,18 @@ function parseRank(v) {
 const rbVolume = {};
 for (const [name, proj, adj, confidence] of rbVolumeRaw) {
   const id = findPlayerId(name);
-  if (!id) continue;
-  rbVolume[String(id)] = {
+  if (!id) {
+    process.stderr.write(`  RB volume: no pool match for "${name}"\n`);
+    continue;
+  }
+  const key = String(id);
+  if (rbVolume[key] && rbVolume[key].name !== name) {
+    process.stderr.write(
+      `  RB volume: skipping "${name}" — ID ${id} already mapped to "${rbVolume[key].name}"\n`
+    );
+    continue;
+  }
+  rbVolume[key] = {
     name,
     projVolumeRank: parseRank(proj),
     adjVolumeRank: parseRank(adj),
