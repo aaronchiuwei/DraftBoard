@@ -29,6 +29,17 @@
   white-space: nowrap;
 }
 
+.modePrimary {
+  padding: 8px 11px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 6px;
+  background: var(--amber);
+  border: 1px solid var(--amber);
+  color: #10141b;
+  white-space: nowrap;
+}
+
 .banner {
   padding-top: 4px;
   padding-bottom: 0;

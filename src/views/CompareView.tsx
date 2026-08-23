@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'preact/hooks';
 import type { AppState, Player } from '../types';
 import { CONSENSUS } from '../types';
 import { injuryFor } from '../data/injuries';
@@ -84,7 +85,14 @@ export function CompareView({ state }: { state: AppState }) {
 
   const showDecision = decision !== null;
   const canPinMore = pinned.length < MAX_COMPARE_PINS;
-  const showTable = canPinMore || !showDecision;
+  /** After two pins, the user can lock into the head-to-head without filling all four. */
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (pinned.length < 2) setFocused(false);
+  }, [pinned.length]);
+
+  const showTable = (canPinMore && !focused) || !showDecision;
   const queueAvailable = state.queue.filter(id => !taken.has(id)).length;
   const rows = showTable ? buildRows(state, sourceIds, horizon) : [];
 
@@ -95,16 +103,16 @@ export function CompareView({ state }: { state: AppState }) {
       <div class={styles.modeHead}>
         {showDecision ? (
           <span class={`eyebrow ${styles.modeLabel}`}>
-            {canPinMore
-              ? `${pinned.length} pinned — add up to ${MAX_COMPARE_PINS - pinned.length} more below`
-              : `Head-to-head · ${pinned.length} players`}
+            {focused || !canPinMore
+              ? `Head-to-head · ${pinned.length} players`
+              : `${pinned.length} pinned — compare now, or add more below`}
           </span>
         ) : (
           <>
             <span class={`eyebrow ${styles.modeLabel}`}>
               {pinned.length === 1
-                ? '1 pinned — add one more below'
-                : `Pin up to ${MAX_COMPARE_PINS} players to decide`}
+                ? '1 pinned — add one more to compare'
+                : `Pin 2–${MAX_COMPARE_PINS} players to compare`}
             </span>
             {queueAvailable >= 2 && (
               <button class={styles.modeAction} onClick={compareQueue}>
@@ -113,8 +121,24 @@ export function CompareView({ state }: { state: AppState }) {
             )}
           </>
         )}
+        {showDecision && canPinMore && !focused && (
+          <button class={styles.modePrimary} onClick={() => setFocused(true)}>
+            Compare these {pinned.length}
+          </button>
+        )}
+        {showDecision && canPinMore && focused && (
+          <button class={styles.modeAction} onClick={() => setFocused(false)}>
+            Add another
+          </button>
+        )}
         {pinned.length > 0 && (
-          <button class={styles.modeAction} onClick={clearComparePins}>
+          <button
+            class={styles.modeAction}
+            onClick={() => {
+              setFocused(false);
+              clearComparePins();
+            }}
+          >
             Clear {pinned.length} pinned
           </button>
         )}
@@ -147,7 +171,7 @@ export function CompareView({ state }: { state: AppState }) {
           )}
           {showDecision && canPinMore && (
             <div class={`empty ${styles.banner}`}>
-              Tap ○ below to add another player (up to {MAX_COMPARE_PINS} total).
+              Or tap ○ below to add another (up to {MAX_COMPARE_PINS}).
             </div>
           )}
 

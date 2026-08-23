@@ -563,6 +563,23 @@ describe('compare decision', () => {
     expect(screen.getByRole('button', { name: /Draft Gibbs/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Draft Robinson/ })).toBeTruthy();
   });
+
+  it('lets you lock into a comparison after two pins without filling all four', async () => {
+    await startDraft();
+    click(row('Jahmyr Gibbs'));
+    click(screen.getAllByRole('button', { name: 'Compare' }).at(-1));
+    click(button('Cancel'));
+    click(button('Players'));
+    click(row('Bijan Robinson'));
+    click(screen.getAllByRole('button', { name: 'Compare' }).at(-1));
+    click(button('Cancel'));
+
+    expect(screen.getByRole('button', { name: 'Compare these 2' })).toBeTruthy();
+    click(button('Compare these 2'));
+    expect(screen.getByText('Head-to-head · 2 players')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add another' })).toBeTruthy();
+    expect(screen.queryByText('Most disagreement')).toBeNull();
+  });
 });
 
 describe('persistence', () => {
