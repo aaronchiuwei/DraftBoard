@@ -29,6 +29,11 @@
   white-space: nowrap;
 }
 
+.banner {
+  padding-top: 4px;
+  padding-bottom: 0;
+}
+
 .open {
   width: 100%;
   display: flex;

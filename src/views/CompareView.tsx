@@ -94,7 +94,9 @@ export function CompareView({ state }: { state: AppState }) {
         ) : (
           <>
             <span class={`eyebrow ${styles.modeLabel}`}>
-              Pin up to {MAX_COMPARE_PINS} players to decide
+              {pinned.length === 1
+                ? '1 pinned — add one more below'
+                : `Pin up to ${MAX_COMPARE_PINS} players to decide`}
             </span>
             {queueAvailable >= 2 && (
               <button class={styles.modeAction} onClick={compareQueue}>
@@ -121,12 +123,19 @@ export function CompareView({ state }: { state: AppState }) {
           onClear={clearComparePins}
           onOpen={openSheet}
         />
-      ) : pinned.length >= 2 ? (
-        <div class="empty">Not enough pinned players are still on the board.</div>
-      ) : pinned.length === 1 ? (
-        <div class="empty">Pin one more player to compare head-to-head.</div>
       ) : (
         <>
+          {pinned.length >= 2 && (
+            <div class={`empty ${styles.banner}`}>
+              Not enough pinned players are still on the board.
+            </div>
+          )}
+          {pinned.length === 1 && (
+            <div class={`empty ${styles.banner}`}>
+              Pin one more player below to compare head-to-head.
+            </div>
+          )}
+
           <div class={styles.sortRow}>
             <span class={`eyebrow ${styles.label}`}>Sort</span>
             <button
