@@ -3,8 +3,9 @@
  * Refreshes src/data/teams.2026.json from Sleeper team stat lines.
  *
  * Each NFL team carries a TEAM_{abbr} entry in Sleeper's season stats. We
- * rank offense and defense, then bake pass rate and pace so compare can show
- * scheme context without a network call mid-draft.
+ * rank offense and defense, then bake pass rate, pace, shootout environment,
+ * and projected RB1 share so compare can show scheme context without a network
+ * call mid-draft.
  *
  *   node scripts/fetch-teams.mjs [--season 2026]
  */
@@ -12,22 +13,24 @@
 import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 
 const API = 'https://api.sleeper.app/v1';
 
 /** Our pool's abbreviation differs from Sleeper's for one team. */
 const SLEEPER_TO_POOL = { JAX: 'JAC' };
-const POOL_TO_SLEEPER = { JAC: 'JAX' };
 
-const season = Number(argValue('--season') ?? 2026);
-const lastSeason = season - 1;
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const outFile = path.join(root, 'src', 'data', `teams.${season}.json`);
+const require = createRequire(import.meta.url);
 
 function argValue(flag) {
   const i = process.argv.indexOf(flag);
   return i >= 0 ? process.argv[i + 1] : undefined;
 }
+
+const season = Number(argValue('--season') ?? 2026);
+const lastSeason = season - 1;
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const outFile = path.join(root, 'src', 'data', `teams.${season}.json`);
 
 async function getJson(url) {
   const res = await fetch(url, { headers: { accept: 'application/json' } });
@@ -57,7 +60,37 @@ function num(raw, key) {
 async function main() {
   process.stdout.write(`Fetching ${lastSeason} team stats from Sleeper\n`);
 
+  const pool = require(path.join(root, 'src', 'data', 'players.2026.json'));
+  await getJson(`${API}/projections/nfl/regular/${season}`);
   const stats = await getJson(`${API}/stats/nfl/regular/${lastSeason}`);
+
+  let statsFile;
+  try {
+    statsFile = require(path.join(root, 'src', 'data', `stats.${season}.json`));
+  } catch {
+    statsFile = null;
+  }
+
+  const rbPtsByTeam = new Map();
+  if (statsFile?.players) {
+    for (const player of pool.players) {
+      if (player.pos !== 'RB' || player.team === 'FA') continue;
+      const pts = statsFile.players[String(player.id)]?.p?.pts;
+      if (typeof pts !== 'number' || pts <= 0) continue;
+      const list = rbPtsByTeam.get(player.team) ?? [];
+      list.push(pts);
+      rbPtsByTeam.set(player.team, list);
+    }
+  }
+
+  const rb1Shares = new Map();
+  for (const [team, ptsList] of rbPtsByTeam) {
+    const total = ptsList.reduce((a, b) => a + b, 0);
+    if (total <= 0) continue;
+    const top = Math.max(...ptsList);
+    rb1Shares.set(team, Math.round((top / total) * 1000) / 10);
+  }
+
   const rows = [];
 
   for (const [key, raw] of Object.entries(stats)) {
@@ -99,15 +132,27 @@ async function main() {
     true
   );
 
+  const shootoutScore = rankBy(
+    rows.map(r => {
+      const o = ptsRank.get(r.abbr) ?? 16;
+      const d = defRank.get(r.abbr) ?? 16;
+      // Good offense (low ptsRank) + leaky defense (high defRank) = shootout-friendly
+      return [r.abbr, (33 - o) + d];
+    }),
+    true
+  );
+
   const teams = {};
   for (const row of rows) {
     teams[row.abbr] = {
       offRank: offRank.get(row.abbr) ?? null,
       defRank: defRank.get(row.abbr) ?? null,
       ptsRank: ptsRank.get(row.abbr) ?? null,
+      shootoutRank: shootoutScore.get(row.abbr) ?? null,
       passRate: row.passRate === null ? null : Math.round(row.passRate * 1000) / 10,
       playsPerGame: row.playsPerGame === null ? null : Math.round(row.playsPerGame * 10) / 10,
-      offYpp: row.offYpp === null ? null : Math.round(row.offYpp * 10) / 10
+      offYpp: row.offYpp === null ? null : Math.round(row.offYpp * 10) / 10,
+      rb1Share: rb1Shares.get(row.abbr) ?? null
     };
   }
 

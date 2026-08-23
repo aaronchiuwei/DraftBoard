@@ -5,9 +5,11 @@ interface RawTeam {
   offRank: number | null;
   defRank: number | null;
   ptsRank: number | null;
+  shootoutRank: number | null;
   passRate: number | null;
   playsPerGame: number | null;
   offYpp: number | null;
+  rb1Share: number | null;
 }
 
 interface RawTeams {
@@ -25,8 +27,10 @@ export interface TeamContext {
   offRank: number | null;
   defRank: number | null;
   ptsRank: number | null;
+  shootoutRank: number | null;
   passRate: number | null;
   playsPerGame: number | null;
+  rb1Share: number | null;
 }
 
 export function teamContextFor(player: Player): TeamContext | null {
@@ -36,8 +40,10 @@ export function teamContextFor(player: Player): TeamContext | null {
     offRank: team.offRank,
     defRank: team.defRank,
     ptsRank: team.ptsRank,
+    shootoutRank: team.shootoutRank ?? null,
     passRate: team.passRate,
-    playsPerGame: team.playsPerGame
+    playsPerGame: team.playsPerGame,
+    rb1Share: team.rb1Share ?? null
   };
 }
 

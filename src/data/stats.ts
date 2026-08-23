@@ -7,12 +7,23 @@ type StatLine = Readonly<Record<string, number | undefined>>;
 interface RawEntry {
   sid: string;
   shot?: string;
-  /** Last season, as played. */
   a?: StatLine;
-  /** This season, as projected. */
   p?: StatLine;
-  /** Weekly actual vs projected performance from last season. */
   perf?: { vsProj: number; beatPct: number };
+  adv?: {
+    projVolume?: number;
+    adjVolume?: number;
+    tdOpps?: number;
+    recFloor?: number;
+    ydsPerTarget?: number;
+    firstDownsPerTarget?: number;
+    rushYpa?: number;
+    passYpa?: number;
+    qbVolume?: number;
+    qbRushAtt?: number;
+    qbRzRush?: number;
+    goldTier?: string;
+  };
 }
 
 interface RawStats {
@@ -161,6 +172,21 @@ function redZoneEfficiency(line: StatLine | undefined, pos: Pos): number | null 
   return Math.round((tds / opp) * 1000) / 10;
 }
 
+export interface InsightStats {
+  projVolume: number | null;
+  adjVolume: number | null;
+  tdOpps: number | null;
+  recFloor: number | null;
+  ydsPerTarget: number | null;
+  firstDownsPerTarget: number | null;
+  rushYpa: number | null;
+  passYpa: number | null;
+  qbVolume: number | null;
+  qbRushAtt: number | null;
+  qbRzRush: number | null;
+  goldTier: string | null;
+}
+
 /** Compare-oriented stats derived from baked Sleeper lines. */
 export function compareStatsFor(player: Player): CompareStats {
   const entry = data.players[String(player.id)];
@@ -176,6 +202,26 @@ export function compareStatsFor(player: Player): CompareStats {
     beatProjPct: entry?.perf?.beatPct ?? null,
     rzOpportunity: redZoneOpportunity(actual, player.pos),
     rzEfficiency: redZoneEfficiency(actual, player.pos)
+  };
+}
+
+/** Volume, efficiency, and tier stats inspired by advanced draft research charts. */
+export function insightStatsFor(player: Player): InsightStats {
+  const entry = data.players[String(player.id)];
+  const adv = entry?.adv;
+  return {
+    projVolume: adv?.projVolume ?? null,
+    adjVolume: adv?.adjVolume ?? null,
+    tdOpps: adv?.tdOpps ?? null,
+    recFloor: adv?.recFloor ?? null,
+    ydsPerTarget: adv?.ydsPerTarget ?? null,
+    firstDownsPerTarget: adv?.firstDownsPerTarget ?? null,
+    rushYpa: adv?.rushYpa ?? null,
+    passYpa: adv?.passYpa ?? null,
+    qbVolume: adv?.qbVolume ?? null,
+    qbRushAtt: adv?.qbRushAtt ?? null,
+    qbRzRush: adv?.qbRzRush ?? null,
+    goldTier: adv?.goldTier ?? null
   };
 }
 

@@ -60,8 +60,12 @@ const FIELDS = [
   ['pts_allow', 'pa_allow'],
   ['rec_rz_tgt', 'rzRec'],
   ['rush_rz_att', 'rzRush'],
-  ['pass_rz_att', 'rzPass']
+  ['pass_rz_att', 'rzPass'],
+  ['rec_fd', 'recFd'],
+  ['off_snp', 'snaps']
 ];
+
+const RZ_WEIGHT = 4.4;
 
 const WEEKLY_BATCH = 12;
 
@@ -199,6 +203,94 @@ function statLine(raw) {
   return Object.keys(out).length > 0 ? out : null;
 }
 
+function tdOpps(line) {
+  if (!line) return null;
+  const rec = line.rzRec ?? 0;
+  const rush = line.rzRush ?? 0;
+  if (!line.rzRec && !line.rzRush) return null;
+  return rec + rush;
+}
+
+function valuableVolume(line) {
+  if (!line) return null;
+  const ra = line.ra ?? 0;
+  const tgt = line.tgt ?? 0;
+  const opps = tdOpps(line) ?? 0;
+  if (!ra && !tgt && !opps) return null;
+  return Math.round((ra + tgt + RZ_WEIGHT * opps) * 10) / 10;
+}
+
+function scaledProjTdOpps(actual, projected) {
+  if (!projected) return tdOpps(actual);
+  let opps = 0;
+  let has = false;
+  if (actual?.tgt && actual?.rzRec && projected.tgt) {
+    opps += (actual.rzRec / actual.tgt) * projected.tgt;
+    has = true;
+  }
+  if (actual?.ra && actual?.rzRush && projected.ra) {
+    opps += (actual.rzRush / actual.ra) * projected.ra;
+    has = true;
+  }
+  if (has) return Math.round(opps * 10) / 10;
+  return tdOpps(projected) ?? tdOpps(actual);
+}
+
+function ratio(num, den) {
+  if (typeof num !== 'number' || typeof den !== 'number' || den <= 0) return null;
+  return Math.round((num / den) * 100) / 100;
+}
+
+function median(values) {
+  const sorted = values.filter(v => typeof v === 'number').sort((a, b) => a - b);
+  if (sorted.length === 0) return null;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+function goldTier(tdOppsVal, recFloor, rawTouches, medTd, medTgt, medRaw) {
+  if (tdOppsVal === null || recFloor === null) return null;
+  const highTd = medTd !== null && tdOppsVal >= medTd;
+  const highRec = medTgt !== null && recFloor >= medTgt;
+  const highRaw = medRaw !== null && rawTouches !== null && rawTouches >= medRaw;
+  if (highTd && highRec) return 'Gold Standard';
+  if (highTd && !highRec) return 'Gold Diggers';
+  if (!highTd && highRec) return 'Silver Lining';
+  if (highRaw && !highTd && !highRec) return "Fool's Gold";
+  return null;
+}
+
+function buildAdv(actual, projected, pos) {
+  const projTd = scaledProjTdOpps(actual, projected);
+  let projVolume = null;
+  if (projected) {
+    const ra = projected.ra ?? 0;
+    const tgt = projected.tgt ?? 0;
+    if (ra || tgt || projTd) {
+      projVolume = Math.round((ra + tgt + RZ_WEIGHT * (projTd ?? 0)) * 10) / 10;
+    }
+  }
+
+  const adv = {
+    projVolume,
+    adjVolume: valuableVolume(actual),
+    tdOpps: projTd,
+    recFloor: projected?.tgt ?? projected?.rec ?? null,
+    ydsPerTarget: ratio(actual?.recy, actual?.tgt),
+    firstDownsPerTarget: ratio(actual?.recFd, actual?.tgt),
+    rushYpa: ratio(actual?.ry, actual?.ra),
+    passYpa: ratio(actual?.py, actual?.pa),
+    qbVolume:
+      pos === 'QB' && projected?.pa !== undefined
+        ? Math.round(((projected.pa ?? 0) + (projected.ra ?? 0)) * 10) / 10
+        : null,
+    qbRushAtt: pos === 'QB' ? (projected?.ra ?? null) : null,
+    qbRzRush: pos === 'QB' ? (actual?.rzRush ?? null) : null
+  };
+
+  return Object.fromEntries(Object.entries(adv).filter(([, v]) => v !== null && v !== undefined));
+}
+
 async function main() {
   process.stdout.write(`Fetching ${lastSeason} stats and ${season} projections from Sleeper\n`);
 
@@ -254,6 +346,37 @@ async function main() {
     const perf = await weeklyPerformance(sid, lastSeason);
     if (perf) players[id].perf = perf;
   });
+
+  const rbMeta = [];
+  for (const player of pool.players) {
+    const entry = players[player.id];
+    if (!entry || player.pos !== 'RB') continue;
+    const actual = entry.a;
+    const projected = entry.p;
+    const td = scaledProjTdOpps(actual, projected);
+    const floor = projected?.tgt ?? projected?.rec ?? null;
+    const raw = (projected?.ra ?? 0) + (floor ?? 0);
+    rbMeta.push({ id: player.id, td, floor, raw: raw || null });
+  }
+
+  const medTd = median(rbMeta.map(r => r.td));
+  const medTgt = median(rbMeta.map(r => r.floor));
+  const medRaw = median(rbMeta.map(r => r.raw));
+
+  for (const player of pool.players) {
+    const entry = players[player.id];
+    if (!entry) continue;
+    const adv = buildAdv(entry.a, entry.p, player.pos);
+    if (Object.keys(adv).length > 0) entry.adv = adv;
+
+    if (player.pos === 'RB') {
+      const td = adv.tdOpps ?? null;
+      const floor = adv.recFloor ?? entry.p?.tgt ?? entry.p?.rec ?? null;
+      const raw = (entry.p?.ra ?? 0) + (floor ?? 0);
+      const tier = goldTier(td, floor, raw || null, medTd, medTgt, medRaw);
+      if (tier) entry.adv = { ...entry.adv, goldTier: tier };
+    }
+  }
 
   const payload = {
     actualSeason: lastSeason,

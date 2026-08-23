@@ -14,6 +14,7 @@
     "depth": "node scripts/fetch-depth.mjs",
     "injuries": "node scripts/fetch-injuries.mjs",
     "teams": "node scripts/fetch-teams.mjs",
+    "research": "node scripts/build-research-data.mjs",
     "stats": "node scripts/fetch-stats.mjs"
   },
   "repository": {
