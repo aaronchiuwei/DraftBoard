@@ -41,6 +41,24 @@ interface Row {
 
 type Spread = NonNullable<ReturnType<typeof spreadOf>>;
 
+function buildRows(state: AppState, sourceIds: readonly string[], horizon: number): Row[] {
+  const rows: Row[] = [];
+  for (const player of selectComparablePlayers(state)) {
+    const spread = spreadOf(player, sourceIds, horizon);
+    const consensus = consensusOf(player, sourceIds);
+    if (!spread || consensus === null) continue;
+    if (spread.min > horizon) continue;
+    rows.push({ player, spread, consensus });
+  }
+
+  rows.sort((a, b) =>
+    state.ui.compareSort === 'spread'
+      ? b.spread.spread - a.spread.spread
+      : a.consensus - b.consensus
+  );
+  return rows;
+}
+
 export function CompareView({ state }: { state: AppState }) {
   const pool = selectPool(state);
   const sources = selectSources(state);
@@ -65,32 +83,22 @@ export function CompareView({ state }: { state: AppState }) {
   );
 
   const showDecision = decision !== null;
+  const canPinMore = pinned.length < MAX_COMPARE_PINS;
+  const showTable = canPinMore || !showDecision;
   const queueAvailable = state.queue.filter(id => !taken.has(id)).length;
-
-  const rows: Row[] = [];
-  if (!showDecision) {
-    for (const player of selectComparablePlayers(state)) {
-      const spread = spreadOf(player, sourceIds, horizon);
-      const consensus = consensusOf(player, sourceIds);
-      if (!spread || consensus === null) continue;
-      if (spread.min > horizon) continue;
-      rows.push({ player, spread, consensus });
-    }
-
-    rows.sort((a, b) =>
-      state.ui.compareSort === 'spread'
-        ? b.spread.spread - a.spread.spread
-        : a.consensus - b.consensus
-    );
-  }
+  const rows = showTable ? buildRows(state, sourceIds, horizon) : [];
 
   return (
     <>
-      {!showDecision && <Controls ui={state.ui} sources={sources} showSources={false} />}
+      {showTable && <Controls ui={state.ui} sources={sources} showSources={false} />}
 
       <div class={styles.modeHead}>
         {showDecision ? (
-          <span class={`eyebrow ${styles.modeLabel}`}>Head-to-head</span>
+          <span class={`eyebrow ${styles.modeLabel}`}>
+            {canPinMore
+              ? `${pinned.length} pinned — add up to ${MAX_COMPARE_PINS - pinned.length} more below`
+              : `Head-to-head · ${pinned.length} players`}
+          </span>
         ) : (
           <>
             <span class={`eyebrow ${styles.modeLabel}`}>
@@ -105,14 +113,14 @@ export function CompareView({ state }: { state: AppState }) {
             )}
           </>
         )}
-        {pinned.length > 0 && !showDecision && (
+        {pinned.length > 0 && (
           <button class={styles.modeAction} onClick={clearComparePins}>
             Clear {pinned.length} pinned
           </button>
         )}
       </div>
 
-      {showDecision && decision ? (
+      {showDecision && decision && (
         <CompareDecisionPanel
           decision={decision}
           pool={pool}
@@ -123,16 +131,23 @@ export function CompareView({ state }: { state: AppState }) {
           onClear={clearComparePins}
           onOpen={openSheet}
         />
-      ) : (
+      )}
+
+      {showTable && (
         <>
-          {pinned.length >= 2 && (
+          {!showDecision && pinned.length >= 2 && (
             <div class={`empty ${styles.banner}`}>
               Not enough pinned players are still on the board.
             </div>
           )}
-          {pinned.length === 1 && (
+          {!showDecision && pinned.length === 1 && (
             <div class={`empty ${styles.banner}`}>
               Pin one more player below to compare head-to-head.
+            </div>
+          )}
+          {showDecision && canPinMore && (
+            <div class={`empty ${styles.banner}`}>
+              Tap ○ below to add another player (up to {MAX_COMPARE_PINS} total).
             </div>
           )}
 
