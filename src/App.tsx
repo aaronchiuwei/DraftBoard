@@ -30,9 +30,7 @@ export function App() {
     setView(next);
   }
 
-  // a build with no Supabase project, or a device that has opted out, never
-  // sees this and behaves exactly as it did before accounts existed
-  if (auth.configured && !auth.localOnly && auth.status !== 'signedIn') {
+  if (auth.status !== 'signedIn') {
     return <AuthView />;
   }
 

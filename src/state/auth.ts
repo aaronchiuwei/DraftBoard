@@ -9,7 +9,6 @@ import {
   loadState,
   readLastUser,
   readLocalAccounts,
-  readLocalOnly,
   readPersisted,
   savedAtOf,
   toPersisted,
@@ -21,7 +20,7 @@ import {
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'offline' | 'error';
 
 export interface AuthState {
-  /** False when no Supabase project is configured; the app is then local-only. */
+  /** False when no Supabase project is configured; accounts stay on this device. */
   configured: boolean;
   status: 'loading' | 'signedOut' | 'signedIn';
   userId: string | null;
@@ -31,8 +30,6 @@ export interface AuthState {
   notice: string | null;
   /** A sign-in or sign-up request is in flight. */
   busy: boolean;
-  /** This device has been told to stop asking about accounts. */
-  localOnly: boolean;
 }
 
 /* An account remembered on this device is trusted until the cloud contradicts
@@ -40,6 +37,9 @@ export interface AuthState {
    accounts are the same: lastUser is enough, because there is no network to wait on. */
 const bootUser = readLastUser();
 const bootLocal = bootUser ? (readLocalAccounts().find(a => a.id === bootUser) ?? null) : null;
+
+// prior "continue without an account" opt-outs no longer apply
+writeLocalOnly(false);
 
 export const authStore = createStore<AuthState>({
   configured: AUTH_CONFIGURED,
@@ -49,8 +49,7 @@ export const authStore = createStore<AuthState>({
   sync: 'idle',
   error: null,
   notice: null,
-  busy: false,
-  localOnly: readLocalOnly()
+  busy: false
 });
 
 export function useAuth(): AuthState {
@@ -314,15 +313,4 @@ async function localAuth(mode: 'in' | 'up', email: string, password: string): Pr
   } finally {
     patch({ busy: false });
   }
-}
-
-/** Dismisses the account screen and keeps this device on local-only storage. */
-export function continueLocally(): void {
-  writeLocalOnly(true);
-  patch({ localOnly: true, error: null, notice: null });
-}
-
-export function openAccounts(): void {
-  writeLocalOnly(false);
-  patch({ localOnly: false });
 }

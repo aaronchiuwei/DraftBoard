@@ -1,18 +1,12 @@
 import { useState } from 'preact/hooks';
-import type { ComponentChildren } from 'preact';
 import { signIn, signUp, useAuth } from '../state/auth';
 import styles from './AuthView.module.css';
 
-interface Props {
-  /** Extra actions under the submit button, such as skipping the account. */
-  footer?: ComponentChildren;
-}
-
 /**
- * Email and password against whichever backend the build is using. The cloud
- * gate and the Setup panel share this so the two screens cannot drift.
+ * Email and password against whichever backend the build is using. The gate
+ * screen and any account UI share this so the two cannot drift.
  */
-export function AuthForm({ footer }: Props) {
+export function AuthForm() {
   const auth = useAuth();
   const [mode, setMode] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
@@ -77,8 +71,6 @@ export function AuthForm({ footer }: Props) {
       <button type="submit" class={styles.submit} disabled={!canSubmit}>
         {auth.busy ? 'Working…' : creating ? 'Create account' : 'Sign in'}
       </button>
-
-      {footer}
     </form>
   );
 }

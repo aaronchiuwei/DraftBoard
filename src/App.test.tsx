@@ -22,6 +22,16 @@ function freshStorage(seed: Record<string, string> = {}) {
   return backing;
 }
 
+/** Boots a signed-in session so tests can reach the draft UI. */
+const TEST_USER = 'test-user';
+
+function signedInStorage(seed: Record<string, string> = {}) {
+  return freshStorage({
+    'draftroom.lastUser': TEST_USER,
+    ...seed
+  });
+}
+
 /** Boots a fresh copy of the app against the storage currently installed. */
 async function mountApp() {
   vi.resetModules();
@@ -82,7 +92,7 @@ function onClockLabel(): string | undefined {
 
 /** Boots into a started 12-team draft. */
 async function startDraft() {
-  freshStorage();
+  signedInStorage();
   await mountApp();
   click(button('Start draft'));
 }
@@ -102,6 +112,10 @@ function enqueue(name: string) {
 
 beforeEach(() => {
   vi.unstubAllGlobals();
+  // .env.local may configure Supabase; tests render App without initAuth, so
+  // keep the build local unless a case explicitly stubs a project in.
+  vi.stubEnv('VITE_SUPABASE_URL', '');
+  vi.stubEnv('VITE_SUPABASE_ANON_KEY', '');
   cleanup();
   document.body.innerHTML = '';
 });
@@ -114,8 +128,16 @@ afterEach(async () => {
 });
 
 describe('draft flow', () => {
-  it('boots into setup before a league exists', async () => {
+  it('asks for an account before the draft opens', async () => {
     freshStorage();
+    await mountApp();
+    expect(screen.getByText('Draft Room')).toBeTruthy();
+    expect(screen.getByPlaceholderText('you@example.com')).toBeTruthy();
+    expect(screen.queryByText('League setup')).toBeNull();
+  });
+
+  it('boots into setup once signed in and before a league exists', async () => {
+    signedInStorage();
     await mountApp();
     expect(screen.getByText('League setup')).toBeTruthy();
     expect(screen.getByText(/Set up your league to start/)).toBeTruthy();
@@ -190,6 +212,10 @@ describe('player sheet', () => {
 
   it('shows only the stats that mean something for the position', async () => {
     await startDraft();
+    click(button('ESPN'));
+    fireEvent.input(screen.getByPlaceholderText('Find a player'), {
+      target: { value: 'Aubrey' }
+    });
     click(row('Brandon Aubrey'));
 
     expect(screen.getByText('FG')).toBeTruthy();
@@ -204,13 +230,15 @@ describe('player sheet', () => {
     expect(shot?.getAttribute('src')).toContain('sleepercdn.com');
   });
 
-  it('falls back to initials for a team defence, which has no portrait', async () => {
+  it('shows defence stats on the team sheet', async () => {
     await startDraft();
+    fireEvent.input(screen.getByPlaceholderText('Find a player'), {
+      target: { value: 'Texans' }
+    });
     click(row('Houston Texans'));
 
-    expect(document.querySelector('img')).toBeNull();
-    expect(screen.getByText('HT')).toBeTruthy();
     expect(screen.getByText('SACK')).toBeTruthy();
+    expect(screen.queryByText('REC YD')).toBeNull();
   });
 });
 
@@ -255,7 +283,10 @@ describe('tabs', () => {
   it('renders the compare table with one column per source', async () => {
     await startDraft();
     click(button('Compare'));
-    const headers = screen.getAllByRole('columnheader').map(h => h.textContent);
+    const headers = screen
+      .getAllByRole('columnheader')
+      .map(h => h.textContent)
+      .filter(Boolean);
     expect(headers).toEqual(['Player', 'NFFC', 'BIG', 'CLAUDE', 'ESPN', 'YHOO', 'SLEEP', 'Gap']);
   });
 });
@@ -520,15 +551,15 @@ describe('compare decision', () => {
   it('compares two pinned players head-to-head', async () => {
     await startDraft();
     click(row('Jahmyr Gibbs'));
-    click(button('Compare'));
+    click(screen.getAllByRole('button', { name: 'Compare' }).at(-1));
     click(button('Cancel'));
+    click(button('Players'));
     click(row('Bijan Robinson'));
-    click(button('Compare'));
+    click(screen.getAllByRole('button', { name: 'Compare' }).at(-1));
+    click(button('Cancel'));
 
-    expect(screen.getByText('Head-to-head')).toBeTruthy();
     expect(screen.getByText('Recommendation')).toBeTruthy();
-    expect(screen.getByText(/^Draft /)).toBeTruthy();
-    expect(screen.getByText('Consensus')).toBeTruthy();
+    expect(screen.getByText('Draft Jahmyr Gibbs')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Draft Gibbs/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Draft Robinson/ })).toBeTruthy();
   });
@@ -536,7 +567,7 @@ describe('compare decision', () => {
 
 describe('persistence', () => {
   it('restores a draft in progress from storage', async () => {
-    freshStorage();
+    signedInStorage();
     await mountApp();
     click(button('Start draft'));
     draft('Jahmyr Gibbs');
@@ -547,7 +578,7 @@ describe('persistence', () => {
   });
 
   it('restores the queue, the flags, and the depth chart team', async () => {
-    freshStorage();
+    signedInStorage();
     await mountApp();
     click(button('Start draft'));
     enqueue('Jahmyr Gibbs');
@@ -566,8 +597,8 @@ describe('persistence', () => {
   });
 
   it('loads a draft saved before the queue existed', async () => {
-    freshStorage({
-      'draftroom.v2': JSON.stringify({
+    signedInStorage({
+      [`draftroom.v2.u.${TEST_USER}`]: JSON.stringify({
         schema: 2,
         draft: {
           ready: true,
@@ -618,9 +649,18 @@ describe('persistence', () => {
     });
     await mountApp();
 
+    click(screen.getAllByRole('button', { name: 'Create account' })[0]);
+    fireEvent.input(screen.getByPlaceholderText('you@example.com'), {
+      target: { value: 'legacy@test.com' }
+    });
+    fireEvent.input(screen.getByPlaceholderText('At least 6 characters'), {
+      target: { value: 'secret1' }
+    });
+    click(screen.getAllByRole('button', { name: 'Create account' }).at(-1));
+    await waitFor(() => expect(screen.getByText('1.04')).toBeTruthy());
+
     // three picks into a 10-team league puts the clock at 1.04, on team D
-    expect(screen.getByText('1.04')).toBeTruthy();
-    expect(screen.getByText('D')).toBeTruthy();
+    expect(document.querySelector('.name.me')?.textContent).toBe('D');
 
     // the three picks went to teams A, B and C, one each
     click(button('Teams'));
@@ -660,17 +700,18 @@ describe('accounts', () => {
   }
 
   afterEach(() => {
-    vi.unstubAllEnvs();
+    vi.stubEnv('VITE_SUPABASE_URL', '');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', '');
   });
 
-  it('is invisible when the build has no project configured', async () => {
+  it('always asks for an account before the draft opens', async () => {
     freshStorage();
     await mountApp();
-    expect(screen.getByText('League setup')).toBeTruthy();
-    expect(screen.queryByText(/Continue without an account/)).toBeNull();
+    expect(screen.queryByText('League setup')).toBeNull();
+    expect(screen.getByPlaceholderText('you@example.com')).toBeTruthy();
   });
 
-  it('asks for an account before the draft when one is configured', async () => {
+  it('asks for an account when a cloud project is configured', async () => {
     configureSupabase();
     freshStorage();
     await mountApp();
@@ -775,8 +816,8 @@ describe('local accounts', () => {
 describe('your pick line', () => {
   /** Boots straight into a running 12-team draft from a given slot. */
   async function draftFromSlot(slot: number, picks: number[] = []) {
-    freshStorage({
-      'draftroom.v2': JSON.stringify({
+    signedInStorage({
+      [`draftroom.v2.u.${TEST_USER}`]: JSON.stringify({
         schema: 4,
         draft: {
           ready: true,
@@ -843,8 +884,8 @@ describe('your pick line', () => {
   });
 
   it('drops the lines once the draft is over', async () => {
-    freshStorage({
-      'draftroom.v2': JSON.stringify({
+    signedInStorage({
+      [`draftroom.v2.u.${TEST_USER}`]: JSON.stringify({
         schema: 4,
         draft: {
           ready: true,

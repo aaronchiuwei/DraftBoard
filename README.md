@@ -2,7 +2,7 @@
 
 An offline-first draft tracker for a live, in-person PPR fantasy football draft.
 
-Open it on your phone, tap names as they come off the board, and it keeps the picks, the board, and every roster in sync. It works with no connection. An account is optional, and only buys you the same draft on a second device.
+Open it on your phone, tap names as they come off the board, and it keeps the picks, the board, and every roster in sync. It works with no connection once you are signed in. An account is required; with a configured project it also carries the same draft to a second device.
 
 Built for a specific league: **1 QB, 2 RB, 2 WR, 1 TE, 2 FLEX, 1 DEF, 1 K**, snake order.
 
@@ -206,9 +206,7 @@ Three requests: Sleeper's player directory, last season's stats, this season's p
 
 ## Accounts and sync
 
-Optional, and **off unless the build is configured for it**. With no Supabase project set, the app is exactly what it was before accounts existed: no sign-in screen, storage on the device only, and none of the SDK in the bundle — the dynamic import is dead code that Rollup drops, which the build output confirms.
-
-Configured, it's email and password against Supabase Auth, and your league, queue, flags, and picks follow you to any device you sign in on.
+**Required to open the app.** With no Supabase project set, accounts still work — email and password against a list stored on the device. With a project configured, the same sign-in also syncs your league, queue, flags, and picks to any device you use.
 
 ```bash
 cp .env.example .env.local     # then fill in the two values
@@ -216,11 +214,9 @@ cp .env.example .env.local     # then fill in the two values
 
 Run `supabase/schema.sql` once in the SQL editor. It creates one row per account and turns on row-level security — the anon key ships in the bundle, so those policies are the only thing keeping one account's draft away from another's.
 
-### It is not a wall
+### Sign-in is the gate
 
-The sign-in screen has **Continue without an account**, and that choice sticks. This is deliberate: the app's one promise is that it works in a room with no signal, and a login you can't complete on bad hotel wifi would break it at exactly the wrong moment. An account is for carrying a draft between devices, not for permission to draft. Sign in later from Setup → Account, and the local draft you already started is adopted by the account rather than thrown away.
-
-A signed-in device is trusted from `localStorage` before Supabase is asked, so you open into your own draft immediately and offline, and confirmation happens in the background.
+You cannot draft without an account. A remembered session opens straight into your draft offline; the cloud is confirmed in the background when configured. Signing out returns you to the sign-in screen.
 
 ### Which copy wins
 
@@ -228,7 +224,7 @@ Local storage stays the source of truth during a draft; the cloud is a sync targ
 
 On sign-in the device and the cloud are reconciled by which was written last, and every payload carries the timestamp that decides it. Nothing is ever half-applied: one copy wins whole. If the pull fails, pushing stays switched off until it succeeds, so a stale device can't overwrite a newer draft from another one — it retries when the connection returns. An account with nothing saved anywhere adopts whatever draft is already on the device.
 
-Two accounts on one phone each get their own slot, and signing out returns the device to the local draft it had before, untouched.
+Two accounts on one phone each get their own slot.
 
 ---
 
@@ -346,4 +342,4 @@ Static site. Vercel detects Vite and builds with `npm run build` into `dist`. `v
 
 First-time setup: import the repo at [vercel.com/new](https://vercel.com/new). Framework Preset should detect as **Vite** — leave the build and output settings alone. After that, every push to `main` deploys, and pull requests get preview URLs.
 
-For accounts, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under Settings → Environment Variables and redeploy. They are read at build time, so a running deploy won't pick them up until it rebuilds. Leave them off and you get the local-only app, which is a perfectly good way to run this.
+For accounts, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under Settings → Environment Variables and redeploy. They are read at build time, so a running deploy won't pick them up until it rebuilds. Leave them off and accounts still work on-device only.
