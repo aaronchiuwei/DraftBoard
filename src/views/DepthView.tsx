@@ -1,3 +1,4 @@
+import { useState } from 'preact/hooks';
 import type { AppState, Player, Pos } from '../types';
 import { CONSENSUS } from '../types';
 import {
@@ -6,6 +7,7 @@ import {
   DEPTH_SOURCE,
   DEPTH_TEAMS,
   resolvedTeam,
+  teamMatchesQuery,
   type ResolvedEntry
 } from '../data/depth';
 import { injuryForName, reportFromTag } from '../data/injuries';
@@ -96,9 +98,11 @@ function DepthRow({ entry, player, groupPos, slot, rank, rankLabel, gone, flagge
 }
 
 export function DepthView({ state }: { state: AppState }) {
+  const [teamQuery, setTeamQuery] = useState('');
   const code = DEPTH_TEAMS.some(t => t.code === state.ui.depthTeam)
     ? state.ui.depthTeam
     : (DEPTH_TEAMS[0]?.code ?? '');
+  const visibleTeams = DEPTH_TEAMS.filter(t => teamMatchesQuery(t, teamQuery));
   const team = resolvedTeam(code);
 
   const pool = selectPool(state);
@@ -114,16 +118,32 @@ export function DepthView({ state }: { state: AppState }) {
 
   return (
     <>
-      <div class={styles.picker}>
-        {DEPTH_TEAMS.map(t => (
-          <button
-            key={t.code}
-            class={t.code === code ? styles.on : undefined}
-            onClick={() => setDepthTeam(t.code)}
-          >
-            {t.code}
-          </button>
-        ))}
+      <div class={styles.pickerHead}>
+        <input
+          type="text"
+          class={styles.teamFind}
+          placeholder="Find a team"
+          value={teamQuery}
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck={false}
+          onInput={e => setTeamQuery((e.target as HTMLInputElement).value)}
+        />
+        <div class={styles.picker}>
+          {visibleTeams.length === 0 ? (
+            <span class={styles.noTeams}>No teams match.</span>
+          ) : (
+            visibleTeams.map(t => (
+              <button
+                key={t.code}
+                class={t.code === code ? styles.on : undefined}
+                onClick={() => setDepthTeam(t.code)}
+              >
+                {t.code}
+              </button>
+            ))
+          )}
+        </div>
       </div>
 
       {!team ? (

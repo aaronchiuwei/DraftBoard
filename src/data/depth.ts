@@ -133,6 +133,24 @@ export function resolvedTeam(code: string): ResolvedTeam | null {
 
 export const DEFAULT_DEPTH_TEAM = DEPTH_TEAMS[0]?.code ?? 'ARI';
 
+/** City portion of a full team name, e.g. "Kansas City" from "Kansas City Chiefs". */
+export function teamCity(team: DepthTeam): string {
+  const suffix = ` ${team.short}`;
+  return team.name.endsWith(suffix) ? team.name.slice(0, -suffix.length) : team.name;
+}
+
+/** Match depth-chart teams by code, city, mascot, or full name. */
+export function teamMatchesQuery(team: DepthTeam, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    team.code.toLowerCase().includes(q) ||
+    team.name.toLowerCase().includes(q) ||
+    team.short.toLowerCase().includes(q) ||
+    teamCity(team).toLowerCase().includes(q)
+  );
+}
+
 /** Precomputed depth-chart slot per pool player, e.g. "WR1", keyed by player id. */
 function buildDepthRoleIndex(): ReadonlyMap<number, string> {
   const poolById = new Map(BASE_PLAYERS.map(p => [p.id, p]));

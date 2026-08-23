@@ -499,6 +499,21 @@ describe('depth charts', () => {
     click(button('Depth'));
     expect(screen.getByText('Kansas City Chiefs')).toBeTruthy();
   });
+
+  it('filters teams by city or mascot', async () => {
+    await startDraft();
+    click(button('Depth'));
+    expect(screen.getByRole('button', { name: 'ARI' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'KC' })).toBeTruthy();
+
+    fireEvent.input(screen.getByPlaceholderText('Find a team'), { target: { value: 'kansas' } });
+    expect(screen.getByRole('button', { name: 'KC' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'ARI' })).toBeNull();
+
+    fireEvent.input(screen.getByPlaceholderText('Find a team'), { target: { value: 'chiefs' } });
+    expect(screen.getByRole('button', { name: 'KC' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'ARI' })).toBeNull();
+  });
 });
 
 describe('persistence', () => {

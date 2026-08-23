@@ -1,14 +1,31 @@
-.picker {
-  display: flex;
-  gap: 5px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 10px 12px;
+.pickerHead {
   position: sticky;
   top: 0;
   background: var(--ink);
   z-index: 10;
   border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+}
+
+.teamFind {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.teamFind::placeholder {
+  color: var(--dim);
+}
+
+.picker {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .picker::-webkit-scrollbar {
@@ -32,6 +49,13 @@
   background: var(--amber);
   border-color: var(--amber);
   color: #10141b;
+}
+
+.noTeams {
+  font-size: 12px;
+  color: var(--dim);
+  padding: 7px 2px;
+  white-space: nowrap;
 }
 
 .teamHead {
