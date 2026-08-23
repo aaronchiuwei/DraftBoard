@@ -10,7 +10,8 @@ import type {
 import { createStore, useStoreState } from './store';
 import { loadState, readLastUser, saveState, writeLastUser } from './persistence';
 import { normalizeLeague } from '../domain/roster';
-import { defaultTeamNames, isDraftOver, totalPicks } from '../domain/draft';
+import { defaultTeamNames, draftedIds, isDraftOver, totalPicks } from '../domain/draft';
+import { MAX_COMPARE_PINS } from '../domain/compare';
 
 /**
  * Whose draft is in the store. Read from the device before anything async
@@ -168,6 +169,46 @@ export function toggleFlagged(playerId: number): void {
 
 export function clearFlags(): void {
   store.set(s => (s.flagged.length === 0 ? s : { ...s, flagged: [] }));
+}
+
+/* -------------------------------------------------------------- compare */
+
+export function toggleComparePin(playerId: number): void {
+  store.set(s => {
+    const i = s.comparePins.indexOf(playerId);
+    if (i >= 0) {
+      return { ...s, comparePins: s.comparePins.filter(id => id !== playerId) };
+    }
+    if (s.comparePins.length >= MAX_COMPARE_PINS) return s;
+    return { ...s, comparePins: [...s.comparePins, playerId] };
+  });
+}
+
+export function clearComparePins(): void {
+  store.set(s => (s.comparePins.length === 0 ? s : { ...s, comparePins: [] }));
+}
+
+/** Pin a player and jump to Compare. Drops the oldest pin when the list is full. */
+export function pinForCompare(playerId: number): void {
+  store.set(s => {
+    if (s.comparePins.includes(playerId)) {
+      return { ...s, ui: { ...s.ui, view: 'compare' } };
+    }
+    const next =
+      s.comparePins.length >= MAX_COMPARE_PINS
+        ? [...s.comparePins.slice(1), playerId]
+        : [...s.comparePins, playerId];
+    return { ...s, comparePins: next, ui: { ...s.ui, view: 'compare' } };
+  });
+}
+
+/** Pin the next available queue players and open Compare. */
+export function compareQueue(): void {
+  store.set(s => {
+    const taken = draftedIds(s.draft);
+    const ids = s.queue.filter(id => !taken.has(id)).slice(0, MAX_COMPARE_PINS);
+    return { ...s, comparePins: ids, ui: { ...s.ui, view: 'compare' } };
+  });
 }
 
 /* --------------------------------------------------------------- league */

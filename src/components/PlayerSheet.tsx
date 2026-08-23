@@ -3,7 +3,7 @@ import { isDraftOver, pickLabel, teamAtPick, teamName } from '../domain/draft';
 import { rankOf } from '../domain/rankings';
 import { survivalOdds } from '../domain/analytics';
 import { selectHorizon, selectPool, selectSourceIds, selectSources } from '../state/selectors';
-import { closeSheet, draftPlayer, toggleFlagged, toggleQueued, undraftPlayer } from '../state/app';
+import { closeSheet, draftPlayer, toggleFlagged, toggleQueued, undraftPlayer, pinForCompare } from '../state/app';
 import { injuryFor, injuryTooltip } from '../data/injuries';
 import { depthRoleFor } from '../data/depth';
 import { statsFor, isRookie } from '../data/stats';
@@ -120,6 +120,12 @@ export function PlayerSheet({ state }: { state: AppState }) {
           </button>
           <button class={flagged ? styles.markOn : undefined} onClick={() => toggleFlagged(id)}>
             {flagged ? '★ Flagged' : '☆ Flag'}
+          </button>
+          <button
+            class={state.comparePins.includes(id) ? styles.markOn : undefined}
+            onClick={() => pinForCompare(id)}
+          >
+            {state.comparePins.includes(id) ? '● Comparing' : 'Compare'}
           </button>
         </div>
 

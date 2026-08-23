@@ -516,6 +516,24 @@ describe('depth charts', () => {
   });
 });
 
+describe('compare decision', () => {
+  it('compares two pinned players head-to-head', async () => {
+    await startDraft();
+    click(row('Jahmyr Gibbs'));
+    click(button('Compare'));
+    click(button('Cancel'));
+    click(row('Bijan Robinson'));
+    click(button('Compare'));
+
+    expect(screen.getByText('Head-to-head')).toBeTruthy();
+    expect(screen.getByText('Recommendation')).toBeTruthy();
+    expect(screen.getByText(/^Draft /)).toBeTruthy();
+    expect(screen.getByText('Consensus')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Draft Gibbs/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Draft Robinson/ })).toBeTruthy();
+  });
+});
+
 describe('persistence', () => {
   it('restores a draft in progress from storage', async () => {
     freshStorage();

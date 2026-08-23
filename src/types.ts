@@ -95,4 +95,6 @@ export interface AppState {
   queue: number[];
   /** Player ids marked to stand out in every list. Order is not meaningful. */
   flagged: number[];
+  /** Up to four players pinned for head-to-head comparison on the Compare tab. */
+  comparePins: number[];
 }

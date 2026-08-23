@@ -1,0 +1,152 @@
+.panel {
+  padding: 0 0 8px;
+}
+
+.rec {
+  margin: 12px 12px 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 176, 32, 0.1);
+  border: 1px solid var(--amber-dim);
+}
+
+.recLabel {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+  font-weight: 800;
+}
+
+.recHeadline {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-top: 4px;
+}
+
+.recDetail {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+.gridWrap {
+  overflow-x: auto;
+  padding: 0 12px;
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 280px;
+}
+
+.metricHead,
+.metricLabel {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 700;
+  padding: 8px 8px 8px 0;
+  white-space: nowrap;
+}
+
+.metricValue {
+  text-align: center;
+  font-family: var(--num);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(46, 56, 70, 0.45);
+}
+
+.best {
+  color: var(--amber);
+  font-weight: 800;
+}
+
+.pickCol {
+  background: rgba(255, 176, 32, 0.06);
+}
+
+.playerHead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px 8px;
+  min-width: 72px;
+}
+
+.playerName {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.pos {
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  padding: 12px 12px 8px;
+  overflow-x: auto;
+}
+
+.draftBtn {
+  flex: 1 0 auto;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.draftBtn:disabled {
+  opacity: 0.45;
+}
+
+.draftPick {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #10141b;
+}
+
+.pins {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 0 12px 4px;
+}
+
+.pinChip {
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.clearPins {
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 700;
+}

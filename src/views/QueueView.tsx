@@ -6,6 +6,7 @@ import { depthRoleFor } from '../data/depth';
 import { headshotFor, isRookie } from '../data/stats';
 import {
   clearQueue,
+  compareQueue,
   moveInQueue,
   openSheet,
   removeTakenFromQueue,
@@ -123,6 +124,9 @@ export function QueueView({ state }: { state: AppState }) {
           {left} available{takenCount > 0 && ` · ${takenCount} gone`}
         </span>
         <div class={styles.headButtons}>
+          {left >= 2 && (
+            <button onClick={compareQueue}>Compare</button>
+          )}
           {takenCount > 0 && (
             <button onClick={removeTakenFromQueue}>Clear {takenCount} gone</button>
           )}

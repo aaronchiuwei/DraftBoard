@@ -5,9 +5,9 @@ import { DEFAULT_DEPTH_TEAM } from '../data/depth';
 
 const KEY = 'draftroom.v2';
 const LEGACY_KEY = 'draftroom.v1';
-const SCHEMA = 4;
+const SCHEMA = 5;
 /** Later schemas only add fields, so an older entry still loads with defaults. */
-const READABLE_SCHEMAS = [2, 3, 4];
+const READABLE_SCHEMAS = [2, 3, 4, 5];
 
 /** UI choices worth remembering between sessions. Search text and the open sheet are not. */
 type PersistedUi = Pick<
@@ -24,6 +24,8 @@ export interface Persisted {
   /** Added in v3. */
   queue?: number[];
   flagged?: number[];
+  /** Added in v5. */
+  comparePins?: number[];
   /**
    * Added in v4. Epoch milliseconds at the moment of writing, which is what
    * decides a device against the copy in the cloud when both have moved.
@@ -191,7 +193,8 @@ export function defaultState(): AppState {
     imported: [],
     disabledSources: [],
     queue: [],
-    flagged: []
+    flagged: [],
+    comparePins: []
   };
 }
 
@@ -208,6 +211,7 @@ export function toPersisted(state: AppState): Persisted {
     disabledSources: state.disabledSources,
     queue: state.queue,
     flagged: state.flagged,
+    comparePins: state.comparePins,
     ui: {
       view: state.ui.view,
       source: state.ui.source,
@@ -229,7 +233,8 @@ export function fromPersisted(parsed: Persisted | null): AppState | null {
     imported: Array.isArray(parsed.imported) ? parsed.imported : [],
     disabledSources: Array.isArray(parsed.disabledSources) ? parsed.disabledSources : [],
     queue: numberList(parsed.queue),
-    flagged: numberList(parsed.flagged)
+    flagged: numberList(parsed.flagged),
+    comparePins: numberList(parsed.comparePins)
   };
 }
 
