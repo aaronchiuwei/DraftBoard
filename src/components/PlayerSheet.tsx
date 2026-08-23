@@ -1,8 +1,7 @@
 import type { AppState } from '../types';
 import { isDraftOver, pickLabel, teamAtPick, teamName } from '../domain/draft';
 import { rankOf } from '../domain/rankings';
-import { survivalOdds } from '../domain/analytics';
-import { selectHorizon, selectPool, selectSourceIds, selectSources } from '../state/selectors';
+import { selectPool, selectSources } from '../state/selectors';
 import { closeSheet, draftPlayer, toggleFlagged, toggleQueued, undraftPlayer, pinForCompare } from '../state/app';
 import { injuryFor, injuryTooltip } from '../data/injuries';
 import { depthRoleFor } from '../data/depth';
@@ -10,6 +9,7 @@ import { statsFor, isRookie } from '../data/stats';
 import { DepthRoleTag } from './DepthRoleTag';
 import { Headshot } from './Headshot';
 import { RookieTag } from './RookieTag';
+import { PlayerInsightStats } from './PlayerInsightStats';
 import { StatTable } from './StatTable';
 import styles from './PlayerSheet.module.css';
 
@@ -23,7 +23,6 @@ export function PlayerSheet({ state }: { state: AppState }) {
 
   const { draft } = state;
   const sources = selectSources(state);
-  const sourceIds = selectSourceIds(state);
   const takenAt = draft.picks.indexOf(id);
   const taken = takenAt >= 0;
   const over = isDraftOver(draft);
@@ -31,10 +30,6 @@ export function PlayerSheet({ state }: { state: AppState }) {
   const queuePlace = state.queue.indexOf(id);
   const flagged = state.flagged.includes(id);
 
-  const odds =
-    !taken && draft.ready && !over
-      ? survivalOdds(player, draft, pool, sourceIds, selectHorizon(state))
-      : null;
   const stats = statsFor(player);
   const injury = injuryFor(player);
   const depthRole = depthRoleFor(player);
@@ -78,18 +73,8 @@ export function PlayerSheet({ state }: { state: AppState }) {
           })}
         </div>
 
-        {odds !== null && (
-          <div class={styles.odds}>
-            <div class={styles.oddsText}>
-              Roughly <b>{Math.round(odds * 100)}%</b> to still be there at your next pick
-            </div>
-            <div class={styles.oddsBar}>
-              <div class={styles.oddsFill} style={{ width: `${Math.round(odds * 100)}%` }} />
-            </div>
-          </div>
-        )}
-
         {stats && <StatTable stats={stats} />}
+        <PlayerInsightStats player={player} />
 
         <div class={styles.to}>
           {taken ? (

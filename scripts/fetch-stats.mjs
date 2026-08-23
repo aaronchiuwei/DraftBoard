@@ -25,6 +25,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 
 const API = 'https://api.sleeper.app/v1';
+const STATS_API = 'https://api.sleeper.com';
 
 /** Our pool's abbreviation differs from Sleeper's for one team. */
 const TEAM_CODE_FIXES = { JAC: 'JAX' };
@@ -56,8 +57,13 @@ const FIELDS = [
   ['int', 'int'],
   ['fum_rec', 'fr'],
   ['def_td', 'dtd'],
-  ['pts_allow', 'pa_allow']
+  ['pts_allow', 'pa_allow'],
+  ['rec_rz_tgt', 'rzRec'],
+  ['rush_rz_att', 'rzRush'],
+  ['pass_rz_att', 'rzPass']
 ];
+
+const WEEKLY_BATCH = 12;
 
 const require = createRequire(import.meta.url);
 const season = Number(argValue('--season') ?? 2026);
@@ -74,6 +80,51 @@ async function getJson(url) {
   const res = await fetch(url, { headers: { accept: 'application/json' } });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
   return res.json();
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/** Weekly actual vs projected PPR for last season — beat rate and avg delta. */
+async function weeklyPerformance(sleeperId, season) {
+  const [actuals, projections] = await Promise.all([
+    getJson(
+      `${STATS_API}/stats/nfl/player/${sleeperId}?season=${season}&season_type=regular&grouping=week`
+    ),
+    getJson(
+      `${STATS_API}/projections/nfl/player/${sleeperId}?season=${season}&season_type=regular&grouping=week`
+    )
+  ]);
+
+  let beats = 0;
+  let compared = 0;
+  let deltaSum = 0;
+
+  for (const [week, row] of Object.entries(actuals)) {
+    const actualPts = row?.stats?.pts_ppr;
+    const projPts = projections?.[week]?.stats?.pts_ppr;
+    if (typeof actualPts !== 'number' || typeof projPts !== 'number') continue;
+    compared++;
+    deltaSum += actualPts - projPts;
+    if (actualPts > projPts) beats++;
+  }
+
+  if (compared === 0) return null;
+  return {
+    vsProj: Math.round((deltaSum / compared) * 10) / 10,
+    beatPct: Math.round((beats / compared) * 1000) / 10
+  };
+}
+
+async function mapInBatches(items, size, fn) {
+  const out = [];
+  for (let i = 0; i < items.length; i += size) {
+    const batch = items.slice(i, i + size);
+    out.push(...(await Promise.all(batch.map(fn))));
+    if (i + size < items.length) await sleep(120);
+  }
+  return out;
 }
 
 /** Lowercase letters only, so "D.J." and "DJ" are the same name. */
@@ -161,6 +212,7 @@ async function main() {
   const index = indexAthletes(directory);
   const players = {};
   const unmatched = [];
+  const weeklyQueue = [];
   let withActual = 0;
   let withProjection = 0;
 
@@ -189,7 +241,19 @@ async function main() {
       ...(actual ? { a: actual } : {}),
       ...(projected ? { p: projected } : {})
     };
+
+    if (actual && player.pos !== 'DEF') {
+      weeklyQueue.push({ id: player.id, sid: sleeperId });
+    }
   }
+
+  process.stdout.write(
+    `Fetching weekly performance for ${weeklyQueue.length} players (${lastSeason})\n`
+  );
+  await mapInBatches(weeklyQueue, WEEKLY_BATCH, async ({ id, sid }) => {
+    const perf = await weeklyPerformance(sid, lastSeason);
+    if (perf) players[id].perf = perf;
+  });
 
   const payload = {
     actualSeason: lastSeason,

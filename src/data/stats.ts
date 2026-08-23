@@ -11,6 +11,8 @@ interface RawEntry {
   a?: StatLine;
   /** This season, as projected. */
   p?: StatLine;
+  /** Weekly actual vs projected performance from last season. */
+  perf?: { vsProj: number; beatPct: number };
 }
 
 interface RawStats {
@@ -110,6 +112,73 @@ export function projectedPointsFor(player: Player): number | null {
   return value(entry?.p, 'pts');
 }
 
+export interface CompareStats {
+  seasonTotal: number | null;
+  seasonAvg: number | null;
+  projTotal: number | null;
+  projAvg: number | null;
+  vsProjAvg: number | null;
+  beatProjPct: number | null;
+  rzOpportunity: number | null;
+  rzEfficiency: number | null;
+}
+
+function avgPts(line: StatLine | undefined): number | null {
+  const pts = value(line, 'pts');
+  const gp = value(line, 'gp');
+  if (pts === null || gp === null || gp <= 0) return null;
+  return Math.round((pts / gp) * 10) / 10;
+}
+
+function redZoneOpportunity(line: StatLine | undefined, pos: Pos): number | null {
+  const rush = value(line, 'rzRush');
+  const rec = value(line, 'rzRec');
+  const pass = value(line, 'rzPass');
+  if (pos === 'QB') {
+    if (pass === null && rush === null) return null;
+    return (pass ?? 0) + (rush ?? 0);
+  }
+  if (pos === 'RB') {
+    if (rush === null && rec === null) return null;
+    return (rush ?? 0) + (rec ?? 0);
+  }
+  if (pos === 'WR' || pos === 'TE') return rec;
+  if (pos === 'K' || pos === 'DEF') return null;
+  return null;
+}
+
+function redZoneEfficiency(line: StatLine | undefined, pos: Pos): number | null {
+  const opp = redZoneOpportunity(line, pos);
+  if (opp === null || opp <= 0) return null;
+  let tds = 0;
+  if (pos === 'QB') {
+    tds = (value(line, 'pt') ?? 0) + (value(line, 'rt') ?? 0);
+  } else if (pos === 'RB' || pos === 'WR' || pos === 'TE') {
+    tds = (value(line, 'rt') ?? 0) + (value(line, 'rect') ?? 0);
+  } else {
+    return null;
+  }
+  return Math.round((tds / opp) * 1000) / 10;
+}
+
+/** Compare-oriented stats derived from baked Sleeper lines. */
+export function compareStatsFor(player: Player): CompareStats {
+  const entry = data.players[String(player.id)];
+  const actual = entry?.a;
+  const projected = entry?.p;
+
+  return {
+    seasonTotal: value(actual, 'pts'),
+    seasonAvg: avgPts(actual),
+    projTotal: value(projected, 'pts'),
+    projAvg: avgPts(projected),
+    vsProjAvg: entry?.perf?.vsProj ?? null,
+    beatProjPct: entry?.perf?.beatPct ?? null,
+    rzOpportunity: redZoneOpportunity(actual, player.pos),
+    rzEfficiency: redZoneEfficiency(actual, player.pos)
+  };
+}
+
 /**
  * The stat panel for one player, or null when Sleeper has neither a season nor
  * a projection for him. Rows both sides leave empty are dropped, so a rookie
@@ -140,4 +209,16 @@ export function statsFor(player: Player): PlayerStats | null {
 export function formatStat(value: number | null): string {
   if (value === null) return '–';
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+export function formatSignedStat(value: number | null, suffix = ''): string {
+  if (value === null) return '–';
+  const rounded = Number.isInteger(value) ? String(value) : value.toFixed(1);
+  if (value > 0) return `+${rounded}${suffix}`;
+  return `${rounded}${suffix}`;
+}
+
+export function formatPctValue(value: number | null): string {
+  if (value === null) return '–';
+  return `${Math.round(value * 10) / 10}%`;
 }

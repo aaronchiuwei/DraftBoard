@@ -64,6 +64,28 @@
   border-bottom: 1px solid rgba(46, 56, 70, 0.45);
 }
 
+.sectionRow {
+  background: rgba(46, 56, 70, 0.25);
+}
+
+.sectionHead {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+  font-weight: 800;
+  padding: 10px 8px 6px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid rgba(46, 56, 70, 0.55);
+}
+
+.hintMark {
+  color: var(--amber);
+  font-weight: 800;
+  cursor: help;
+}
+
 .best {
   color: var(--amber);
   font-weight: 800;

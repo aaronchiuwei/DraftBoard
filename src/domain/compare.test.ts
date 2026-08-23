@@ -27,7 +27,7 @@ describe('buildCompareDecision', () => {
     expect(decision).toBeTruthy();
     expect(decision!.players).toHaveLength(2);
     expect(decision!.headline).toMatch(/^Draft /);
-    expect(decision!.metrics.some(m => m.key === 'consensus')).toBe(true);
+    expect(decision!.sections.some(s => s.rows.some(r => r.key === 'consensus'))).toBe(true);
   });
 
   it('needs at least two available players', () => {

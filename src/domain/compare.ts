@@ -2,10 +2,14 @@ import type { DraftState, Player, SourceKey } from '../types';
 import type { Pool } from '../data/pool';
 import { depthRoleFor } from '../data/depth';
 import { injuryFor } from '../data/injuries';
-import { projectedPointsFor } from '../data/stats';
-import { survivalOdds } from './analytics';
+import { ACTUAL_SEASON, compareStatsFor, formatPctValue, formatSignedStat, projectedPointsFor } from '../data/stats';
+import {
+  formatPassRate,
+  formatPlaysPerGame,
+  formatTeamRank,
+  teamContextFor
+} from '../data/teams';
 import { draftedIds } from './draft';
-import { lineupFor, neededPositions } from './roster';
 import { consensusOf, spreadOf, valueFor } from './rankings';
 
 export const MAX_COMPARE_PINS = 4;
@@ -15,11 +19,11 @@ export interface CompareCandidate {
   consensus: number | null;
   sourceRank: number | null;
   projected: number | null;
-  survival: number | null;
   spread: number | null;
   depthRole: string | null;
-  fillsNeed: boolean;
   injured: boolean;
+  stats: ReturnType<typeof compareStatsFor>;
+  team: ReturnType<typeof teamContextFor>;
 }
 
 export interface CompareMetricRow {
@@ -28,12 +32,19 @@ export interface CompareMetricRow {
   display: string[];
   /** Index of the best value in the row, when one player clearly leads. */
   best: number | null;
+  hint?: string;
+}
+
+export interface CompareSection {
+  key: string;
+  label: string;
+  rows: CompareMetricRow[];
 }
 
 export interface CompareDecision {
   players: Player[];
   candidates: CompareCandidate[];
-  metrics: CompareMetricRow[];
+  sections: CompareSection[];
   pickIndex: number;
   headline: string;
   detail: string;
@@ -44,9 +55,9 @@ function formatRank(v: number | null): string {
   return Number.isInteger(v) ? String(v) : v.toFixed(1);
 }
 
-function formatPct(v: number | null): string {
+function formatPts(v: number | null): string {
   if (v === null) return '–';
-  return `${Math.round(v * 100)}%`;
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
 }
 
 /** Lower numeric rank is better; returns sole winner index or null on a tie. */
@@ -87,10 +98,9 @@ function bestHigher(values: (number | null)[]): number | null {
   return tied ? null : best;
 }
 
-function bestNeed(values: boolean[]): number | null {
-  const winners = values.map((v, i) => (v ? i : -1)).filter(i => i >= 0);
-  if (winners.length === 1) return winners[0] ?? null;
-  return null;
+/** Lower team rank (#1) is better on offense/defense boards. */
+function bestTeamRank(values: (number | null)[]): number | null {
+  return bestLower(values);
 }
 
 export function buildCompareCandidates(
@@ -102,7 +112,6 @@ export function buildCompareCandidates(
   horizon: number
 ): CompareCandidate[] {
   const taken = draftedIds(draft);
-  const needed = neededPositions(lineupFor(draft, pool, draft.league.mySlot));
 
   return playerIds
     .map(id => pool.byId.get(id))
@@ -114,11 +123,11 @@ export function buildCompareCandidates(
         consensus: consensusOf(player, sourceIds),
         sourceRank: valueFor(player, sourceKey, sourceIds),
         projected: projectedPointsFor(player),
-        survival: survivalOdds(player, draft, pool, sourceIds, horizon),
         spread: spread?.spread ?? null,
         depthRole: depthRoleFor(player),
-        fillsNeed: needed.has(player.pos),
-        injured: injuryFor(player) !== null
+        injured: injuryFor(player) !== null,
+        stats: compareStatsFor(player),
+        team: teamContextFor(player)
       };
     });
 }
@@ -127,9 +136,10 @@ function scoreCandidate(c: CompareCandidate): number {
   let score = 0;
   if (c.consensus !== null) score += (400 - c.consensus) * 3;
   if (c.sourceRank !== null) score += (400 - c.sourceRank) * 2;
-  if (c.fillsNeed) score += 25;
   if (c.projected !== null) score += c.projected * 0.15;
-  if (c.survival !== null) score += c.survival * 10;
+  if (c.stats.projAvg !== null) score += c.stats.projAvg * 0.5;
+  if (c.stats.beatProjPct !== null) score += c.stats.beatProjPct * 0.08;
+  if (c.team?.offRank !== null && c.team?.offRank !== undefined) score += (33 - c.team.offRank) * 0.4;
   if (c.injured) score -= 15;
   return score;
 }
@@ -149,26 +159,6 @@ function buildReasons(winner: CompareCandidate, others: CompareCandidate[]): str
     }
   }
 
-  if (winner.fillsNeed && others.some(o => !o.fillsNeed)) {
-    reasons.push(`Fills your open ${winner.player.pos} slot`);
-  }
-
-  if (winner.survival !== null) {
-    for (const other of others) {
-      if (
-        other.survival !== null &&
-        winner.survival >= 0.55 &&
-        other.survival <= 0.35 &&
-        winner.survival - other.survival >= 0.15
-      ) {
-        reasons.push(
-          `More likely still there next pick (${formatPct(winner.survival)} vs ${formatPct(other.survival)})`
-        );
-        break;
-      }
-    }
-  }
-
   const samePos = others.every(o => o.player.pos === winner.player.pos);
   if (samePos && winner.projected !== null) {
     const otherProj = others.map(o => o.projected).filter((v): v is number => v !== null);
@@ -180,11 +170,46 @@ function buildReasons(winner: CompareCandidate, others: CompareCandidate[]): str
     }
   }
 
+  if (winner.stats.beatProjPct !== null) {
+    for (const other of others) {
+      if (
+        other.stats.beatProjPct !== null &&
+        winner.stats.beatProjPct - other.stats.beatProjPct >= 12
+      ) {
+        reasons.push(
+          `Beat weekly projection more often (${formatPctValue(winner.stats.beatProjPct)} vs ${formatPctValue(other.stats.beatProjPct)})`
+        );
+        break;
+      }
+    }
+  }
+
+  if (winner.team?.offRank != null) {
+    for (const other of others) {
+      const otherOff = other.team?.offRank;
+      const winnerOff = winner.team?.offRank;
+      if (otherOff != null && winnerOff != null && otherOff - winnerOff >= 6) {
+        reasons.push(`Better offense (#${winnerOff} vs #${otherOff})`);
+        break;
+      }
+    }
+  }
+
   if (reasons.length === 0) {
     reasons.push('Best overall value across your rankings');
   }
 
   return reasons.slice(0, 3);
+}
+
+function metric(
+  key: string,
+  label: string,
+  display: string[],
+  best: number | null,
+  hint?: string
+): CompareMetricRow {
+  return { key, label, display, best, hint };
 }
 
 export function buildCompareDecision(
@@ -209,42 +234,134 @@ export function buildCompareDecision(
   const players = candidates.map(c => c.player);
   const samePos = players.every(p => p.pos === players[0]?.pos);
 
-  const metrics: CompareMetricRow[] = [
+  const sections: CompareSection[] = [
     {
-      key: 'consensus',
-      label: 'Consensus',
-      display: candidates.map(c => formatRank(c.consensus)),
-      best: bestLower(candidates.map(c => c.consensus))
+      key: 'draft',
+      label: 'Draft Value',
+      rows: [
+        metric(
+          'consensus',
+          'Consensus',
+          candidates.map(c => formatRank(c.consensus)),
+          bestLower(candidates.map(c => c.consensus))
+        ),
+        metric(
+          'source',
+          sourceLabel,
+          candidates.map(c => formatRank(c.sourceRank)),
+          bestLower(candidates.map(c => c.sourceRank))
+        ),
+        metric(
+          'depth',
+          'Depth chart',
+          candidates.map(c => c.depthRole ?? '–'),
+          null
+        )
+      ]
     },
     {
-      key: 'source',
-      label: sourceLabel,
-      display: candidates.map(c => formatRank(c.sourceRank)),
-      best: bestLower(candidates.map(c => c.sourceRank))
+      key: 'fantasy',
+      label: 'Fantasy Points',
+      rows: [
+        metric(
+          'seasonTotal',
+          'Season total',
+          candidates.map(c => formatPts(c.stats.seasonTotal)),
+          samePos ? bestHigher(candidates.map(c => c.stats.seasonTotal)) : null
+        ),
+        metric(
+          'seasonAvg',
+          'Season avg.',
+          candidates.map(c => formatPts(c.stats.seasonAvg)),
+          samePos ? bestHigher(candidates.map(c => c.stats.seasonAvg)) : null
+        ),
+        metric(
+          'projAvg',
+          'Proj. avg.',
+          candidates.map(c => formatPts(c.stats.projAvg)),
+          samePos ? bestHigher(candidates.map(c => c.stats.projAvg)) : null
+        ),
+        metric(
+          'projTotal',
+          'Proj. total',
+          candidates.map(c => formatPts(c.stats.projTotal)),
+          samePos ? bestHigher(candidates.map(c => c.stats.projTotal)) : null
+        )
+      ]
     },
     {
-      key: 'projected',
-      label: 'Proj PPR',
-      display: candidates.map(c => (c.projected === null ? '–' : String(Math.round(c.projected)))),
-      best: samePos ? bestHigher(candidates.map(c => c.projected)) : null
+      key: 'performance',
+      label: 'Past Performance vs. Projection',
+      rows: [
+        metric(
+          'vsProj',
+          'Avg. vs proj.',
+          candidates.map(c => formatSignedStat(c.stats.vsProjAvg, ' pts')),
+          samePos ? bestHigher(candidates.map(c => c.stats.vsProjAvg)) : null,
+          `Weekly over/under vs ${ACTUAL_SEASON} projection`
+        ),
+        metric(
+          'beatProj',
+          '% games beat proj.',
+          candidates.map(c => formatPctValue(c.stats.beatProjPct)),
+          samePos ? bestHigher(candidates.map(c => c.stats.beatProjPct)) : null,
+          `% of ${ACTUAL_SEASON} weeks scoring above projection`
+        )
+      ]
     },
     {
-      key: 'survival',
-      label: 'Still there',
-      display: candidates.map(c => formatPct(c.survival)),
-      best: bestHigher(candidates.map(c => c.survival))
+      key: 'redzone',
+      label: 'Red Zone',
+      rows: [
+        metric(
+          'rzOpp',
+          'Opportunity',
+          candidates.map(c => (c.stats.rzOpportunity === null ? '–' : String(Math.round(c.stats.rzOpportunity)))),
+          samePos ? bestHigher(candidates.map(c => c.stats.rzOpportunity)) : null,
+          `${ACTUAL_SEASON} red-zone touches or attempts`
+        ),
+        metric(
+          'rzEff',
+          'Efficiency',
+          candidates.map(c => (c.stats.rzEfficiency === null ? '–' : formatPctValue(c.stats.rzEfficiency))),
+          samePos ? bestHigher(candidates.map(c => c.stats.rzEfficiency)) : null,
+          'TDs per red-zone opportunity'
+        )
+      ]
     },
     {
-      key: 'depth',
-      label: 'Depth',
-      display: candidates.map(c => c.depthRole ?? '–'),
-      best: null
-    },
-    {
-      key: 'need',
-      label: 'Fills need',
-      display: candidates.map(c => (c.fillsNeed ? 'Yes' : '–')),
-      best: bestNeed(candidates.map(c => c.fillsNeed))
+      key: 'team',
+      label: 'Team Context',
+      rows: [
+        metric(
+          'offRank',
+          'Offense rank',
+          candidates.map(c => formatTeamRank(c.team?.offRank ?? null)),
+          bestTeamRank(candidates.map(c => c.team?.offRank ?? null)),
+          `Yards per play, ${ACTUAL_SEASON}`
+        ),
+        metric(
+          'defRank',
+          'Defense rank',
+          candidates.map(c => formatTeamRank(c.team?.defRank ?? null)),
+          bestTeamRank(candidates.map(c => c.team?.defRank ?? null)),
+          `Yards allowed per play, ${ACTUAL_SEASON}`
+        ),
+        metric(
+          'passRate',
+          'Pass rate',
+          candidates.map(c => formatPassRate(c.team?.passRate ?? null)),
+          null,
+          'Pass attempts as share of offensive plays'
+        ),
+        metric(
+          'pace',
+          'Plays / game',
+          candidates.map(c => formatPlaysPerGame(c.team?.playsPerGame ?? null)),
+          bestHigher(candidates.map(c => c.team?.playsPerGame ?? null)),
+          'Offensive plays per game — more snaps, more opportunity'
+        )
+      ]
     }
   ];
 
@@ -268,7 +385,7 @@ export function buildCompareDecision(
   return {
     players,
     candidates,
-    metrics,
+    sections,
     pickIndex,
     headline: `Draft ${winner.player.name}`,
     detail: reasons.join(' · ')

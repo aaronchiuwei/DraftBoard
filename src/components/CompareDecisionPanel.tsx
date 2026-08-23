@@ -1,3 +1,4 @@
+import { Fragment } from 'preact';
 import type { CompareDecision } from '../domain/compare';
 import type { Pool } from '../data/pool';
 import type { Player } from '../types';
@@ -30,7 +31,7 @@ export function CompareDecisionPanel({
   onClear,
   onOpen
 }: Props) {
-  const { players, metrics, pickIndex, headline, detail } = decision;
+  const { players, sections, pickIndex, headline, detail } = decision;
 
   return (
     <div class={styles.panel}>
@@ -53,18 +54,30 @@ export function CompareDecisionPanel({
             </tr>
           </thead>
           <tbody>
-            {metrics.map(row => (
-              <tr key={row.key}>
-                <th class={styles.metricLabel}>{row.label}</th>
-                {row.display.map((value, i) => (
-                  <td
-                    key={`${row.key}-${players[i]?.id ?? i}`}
-                    class={`${styles.metricValue} ${row.best === i ? styles.best : ''} ${i === pickIndex ? styles.pickCol : ''}`}
-                  >
-                    {value}
-                  </td>
+            {sections.map(section => (
+              <Fragment key={section.key}>
+                <tr class={styles.sectionRow}>
+                  <th colSpan={players.length + 1} class={styles.sectionHead}>
+                    {section.label}
+                  </th>
+                </tr>
+                {section.rows.map(row => (
+                  <tr key={row.key}>
+                    <th class={styles.metricLabel} title={row.hint}>
+                      {row.label}
+                      {row.hint && <span class={styles.hintMark}> ?</span>}
+                    </th>
+                    {row.display.map((value, i) => (
+                      <td
+                        key={`${row.key}-${players[i]?.id ?? i}`}
+                        class={`${styles.metricValue} ${row.best === i ? styles.best : ''} ${i === pickIndex ? styles.pickCol : ''}`}
+                      >
+                        {value}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>
