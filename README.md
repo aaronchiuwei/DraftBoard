@@ -270,7 +270,7 @@ Names are matched with punctuation, accents, and generational suffixes folded, s
 
 ## The data
 
-300 players. NFFC, ESPN, and Sleeper ranks come from each platform's ADP, August 23, 2026; Yahoo is the Yahoo analysts' consensus full-PPR board; the Big Board is a 150-player PPR board. AVG is the mean of whichever active sources rank a player, computed at runtime.
+300 players. NFFC, ESPN, and Sleeper ranks come from each platform's ADP, August 23, 2026; Yahoo is the Yahoo analysts' consensus full-PPR board; the Big Board is a 262-player PPR board (Claude blend of NFFC/Sleeper consensus plus a value model). AVG is the mean of whichever active sources rank a player, computed at runtime.
 
 To refresh the pool, edit `src/data/players.2026.json` or add a new file alongside it. Records are `{id, name, team, pos, ranks}`, where `ranks` maps source id to rank and omits sources that don't rank him. Malformed records throw at boot rather than showing up as a blank cell mid-draft.
 

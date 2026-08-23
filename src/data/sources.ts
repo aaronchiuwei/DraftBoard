@@ -22,7 +22,7 @@ export const BUILTIN_SOURCES: readonly RankSource[] = [
     format: 'Full PPR',
     color: 'var(--text)',
     origin: 'builtin',
-    note: 'Your own 150-player board. No kickers or defenses on it.'
+    note: '262-player PPR board (Claude blend of NFFC/Sleeper + model). No kickers or defenses on it.'
   },
   {
     id: 'espn',
