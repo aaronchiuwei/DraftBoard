@@ -250,7 +250,7 @@ Names are matched with punctuation, accents, and generational suffixes folded, s
 
 ## The data
 
-300 players. NFFC, ESPN, and Sleeper ranks come from each platform's ADP, August 2026; Yahoo is the Yahoo analysts' consensus full-PPR board; the Big Board is a 150-player PPR board. AVG is the mean of whichever active sources rank a player, computed at runtime.
+300 players. NFFC, ESPN, and Sleeper ranks come from each platform's ADP, August 23, 2026; Yahoo is the Yahoo analysts' consensus full-PPR board; the Big Board is a 150-player PPR board. AVG is the mean of whichever active sources rank a player, computed at runtime.
 
 To refresh the pool, edit `src/data/players.2026.json` or add a new file alongside it. Records are `{id, name, team, pos, ranks}`, where `ranks` maps source id to rank and omits sources that don't rank him. Malformed records throw at boot rather than showing up as a blank cell mid-draft.
 
@@ -306,7 +306,7 @@ Headshots are the one exception, fetched from Sleeper's CDN and kept in a runtim
 ## Known limitations
 
 - **No kickers or defenses on the Big Board**, so sorting by BIG in those positions returns nothing. Use another source.
-- **Ranks are a snapshot.** Pulled August 2026. Import a fresher ADP if something moved.
+- **Ranks are a snapshot.** Pulled August 23, 2026. Import a fresher ADP if something moved.
 - **Depth charts are a snapshot too**, and a faster-moving one. Run `npm run depth` and redeploy before draft day. There is no in-app refresh, because there is nothing in the app proxying ESPN.
 - **Projections are somebody else's opinion**, pulled once from Sleeper and baked in. They move through preseason; re-run `npm run stats` before draft day.
 - **Headshots need a connection the first time.** Ones you haven't opened before will be initials in a dead room.
