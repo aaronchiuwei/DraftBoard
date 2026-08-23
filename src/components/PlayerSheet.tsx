@@ -6,6 +6,7 @@ import { closeSheet, draftPlayer, toggleFlagged, toggleQueued, undraftPlayer, pi
 import { injuryFor, injuryTooltip } from '../data/injuries';
 import { depthRoleFor } from '../data/depth';
 import { statsFor, isRookie } from '../data/stats';
+import { TapTooltip } from './TapTooltip';
 import { DepthRoleTag } from './DepthRoleTag';
 import { Headshot } from './Headshot';
 import { RookieTag } from './RookieTag';
@@ -57,7 +58,11 @@ export function PlayerSheet({ state }: { state: AppState }) {
               {' · '}
               {player.team}
             </div>
-            {injury && <div class={styles.injury}>{injuryTooltip(injury).replace(/\n/g, ' · ')}</div>}
+            {injury && (
+              <TapTooltip content={injuryTooltip(injury)} wrap class={styles.injuryTip}>
+                <div class={styles.injury}>{injury.injury ?? injury.status}</div>
+              </TapTooltip>
+            )}
           </div>
         </div>
 

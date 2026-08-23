@@ -5,6 +5,7 @@ import type { Player } from '../types';
 import { injuryFor } from '../data/injuries';
 import { headshotFor, isRookie } from '../data/stats';
 import { draftPlayer } from '../state/app';
+import { TapTooltip } from './TapTooltip';
 import { InjuryTag } from './InjuryTag';
 import { RookieTag } from './RookieTag';
 import { Headshot } from './Headshot';
@@ -63,9 +64,15 @@ export function CompareDecisionPanel({
                 </tr>
                 {section.rows.map(row => (
                   <tr key={row.key}>
-                    <th class={styles.metricLabel} title={row.hint}>
+                    <th class={styles.metricLabel}>
                       {row.label}
-                      {row.hint && <span class={styles.hintMark}> ?</span>}
+                      {row.hint && (
+                        <TapTooltip content={row.hint} wrap class={styles.hintWrap}>
+                          <span class={styles.hintMark} aria-label="What does this mean?">
+                            ?
+                          </span>
+                        </TapTooltip>
+                      )}
                     </th>
                     {row.display.map((value, i) => (
                       <td

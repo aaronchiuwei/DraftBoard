@@ -1,0 +1,43 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+
+.tip {
+  display: none;
+  position: fixed;
+  min-width: 120px;
+  max-width: min(240px, calc(100vw - 16px));
+  padding: 6px 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: normal;
+  color: var(--text);
+  line-height: 1.35;
+  white-space: nowrap;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.tipWrap {
+  white-space: normal;
+}
+
+.tipOn {
+  display: block;
+}
+
+.tip span {
+  display: block;
+}
+
+.tip span:first-child {
+  font-weight: 700;
+}

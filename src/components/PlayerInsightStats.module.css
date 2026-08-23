@@ -50,6 +50,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+.hintWrap {
+  display: inline-flex;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
 .hintMark {
   color: var(--amber);
   font-weight: 800;

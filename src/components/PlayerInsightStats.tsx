@@ -13,6 +13,7 @@ import {
   TEAM_STATS_SEASON,
   teamContextFor
 } from '../data/teams';
+import { TapTooltip } from './TapTooltip';
 import styles from './PlayerInsightStats.module.css';
 
 interface InsightRow {
@@ -103,9 +104,15 @@ export function PlayerInsightStats({ player }: { player: Player }) {
           <div class={styles.sectionHead}>{block.label}</div>
           {block.rows.map(row => (
             <div key={row.label} class={styles.row}>
-              <span class={styles.label} title={row.hint}>
+              <span class={styles.label}>
                 {row.label}
-                {row.hint && <span class={styles.hintMark}> ?</span>}
+                {row.hint && (
+                  <TapTooltip content={row.hint} wrap class={styles.hintWrap}>
+                    <span class={styles.hintMark} aria-label="What does this mean?">
+                      ?
+                    </span>
+                  </TapTooltip>
+                )}
               </span>
               <span class={`${styles.value} mono`}>{row.value}</span>
             </div>

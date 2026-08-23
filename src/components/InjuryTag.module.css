@@ -1,6 +1,5 @@
 .tag {
   flex: 0 0 auto;
-  position: relative;
   font-family: var(--num);
   font-size: 9px;
   font-weight: 800;
@@ -9,44 +8,10 @@
   border: 1px solid rgba(255, 90, 90, 0.35);
   border-radius: 3px;
   padding: 1px 3px;
-  cursor: help;
 }
 
 /* ESPN and Sleeper disagree on severity — worth a second look. */
 .split {
   border-color: var(--amber-dim);
   color: var(--amber);
-}
-
-.tip {
-  display: none;
-  position: fixed;
-  min-width: 140px;
-  max-width: min(220px, calc(100vw - 16px));
-  padding: 6px 8px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  font-family: var(--body);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: normal;
-  color: var(--text);
-  line-height: 1.35;
-  white-space: nowrap;
-  z-index: 200;
-  pointer-events: none;
-}
-
-.tipOn {
-  display: block;
-}
-
-.tip span {
-  display: block;
-}
-
-.tip span:first-child {
-  font-weight: 700;
 }
