@@ -12,6 +12,12 @@
   cursor: help;
 }
 
+/* ESPN and Sleeper disagree on severity — worth a second look. */
+.split {
+  border-color: var(--amber-dim);
+  color: var(--amber);
+}
+
 .tip {
   display: none;
   position: absolute;

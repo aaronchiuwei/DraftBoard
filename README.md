@@ -168,16 +168,18 @@ Two requests per team — the chart gives an ordered list of athlete ids, the ro
 
 ## Injury reports
 
-Every player in the pool carries an ESPN injury tag when one exists: **Q**, **D**, **OUT**, **IR**, and the rest. The tag sits beside his name in Players, Queue, and Depth; hover to see the injury, status, how long he's been out, and when ESPN expects him back.
+Every player in the pool carries an injury tag when ESPN or Sleeper reports one: **Q**, **D**, **OUT**, **PUP**, **IR**, and the rest. The tag sits beside his name in Players, Queue, and Depth; hover to see the injury, status, how long he's been out, and when ESPN expects him back.
+
+**Two sources, one tag.** ESPN supplies return dates; Sleeper is cross-referenced for fantasy-specific designations (PUP vs Out) and catches pool players ESPN omits. When the sources disagree, the tag turns amber and the tooltip shows both — e.g. ESPN says Out but Sleeper says PUP. Yahoo has no public injury API, so it isn't included.
 
 ESPN's return date is often the **next game window** for Questionable tags (opening week for many players in August), not a full recovery timeline. A player listed Q with "Back in ~5 days" may still be a week-to-week concern — read the injury line and the "Out since" date together.
 
 ```bash
-npm run injuries              # current season
+npm run injuries              # current season — ESPN + Sleeper
 npm run injuries -- --season 2027
 ```
 
-One request to ESPN's league injury report, then it writes `src/data/injuries.2026.json`. Commit the result. Like depth charts, this is baked in at build time — run it the morning of the draft and redeploy.
+Two requests (ESPN injury report, Sleeper player directory), then it writes `src/data/injuries.2026.json`. Commit the result. Like depth charts, this is baked in at build time — run it the morning of the draft and redeploy.
 
 ---
 
@@ -326,7 +328,7 @@ Headshots are the one exception, fetched from Sleeper's CDN and kept in a runtim
 - **No kickers or defenses on the Big Board**, so sorting by BIG in those positions returns nothing. Use another source.
 - **Ranks are a snapshot.** Pulled August 23, 2026. Import a fresher ADP if something moved.
 - **Depth charts are a snapshot too**, and a faster-moving one. Run `npm run depth` and redeploy before draft day. There is no in-app refresh, because there is nothing in the app proxying ESPN.
-- **Injury reports are a snapshot too.** Run `npm run injuries` alongside `npm run depth` before draft day.
+- **Injury reports are a snapshot too.** Run `npm run injuries` alongside `npm run depth` before draft day. They merge ESPN return dates with Sleeper status tags.
 - **Projections are somebody else's opinion**, pulled once from Sleeper and baked in. They move through preseason; re-run `npm run stats` before draft day.
 - **Headshots need a connection the first time.** Ones you haven't opened before will be initials in a dead room.
 - **Depth charts cover the offense and the kicker only.** Offensive line, defense, and punt returners are dropped; nothing in this draft turns on the left guard.

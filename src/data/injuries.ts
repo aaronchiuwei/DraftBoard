@@ -3,17 +3,26 @@ import { BASE_PLAYERS } from './pool';
 import { normalizeName } from './import';
 import rawInjuries from './injuries.2026.json';
 
-export interface InjuryReport {
-  /** Short tag shown in the row: Q, D, OUT, IR, etc. */
+export interface SourceInjury {
   tag: string;
-  /** Full status from ESPN: Questionable, Out, Injured Reserve, … */
   status: string;
-  /** Body part / type when ESPN provides it: Knee, Groin, … */
   injury?: string;
-  /** ISO date ESPN last updated the injury report. */
   injuryDate?: string;
-  /** ISO date ESPN expects the player back, when known. */
   returnDate?: string;
+}
+
+export interface InjuryReport {
+  /** Merged tag shown in the row — most severe when sources disagree. */
+  tag: string;
+  /** Status label from the source that supplied the merged tag. */
+  status: string;
+  injury?: string;
+  injuryDate?: string;
+  returnDate?: string;
+  espn?: SourceInjury;
+  sleeper?: SourceInjury;
+  /** False when ESPN and Sleeper tags differ. */
+  agree?: boolean;
 }
 
 interface RawInjuryEntry {
@@ -24,12 +33,15 @@ interface RawInjuryEntry {
   injury?: string;
   injuryDate?: string;
   returnDate?: string;
+  espn?: SourceInjury;
+  sleeper?: SourceInjury;
+  agree?: boolean;
 }
 
 interface RawInjuries {
   season: number;
   fetchedAt: string;
-  source: string;
+  sources: string[];
   players: RawInjuryEntry[];
 }
 
@@ -41,7 +53,7 @@ function parse(data: RawInjuries): RawInjuryEntry[] {
 const raw = rawInjuries as RawInjuries;
 export const INJURIES = parse(raw);
 export const INJURIES_FETCHED_AT = raw.fetchedAt;
-export const INJURIES_SOURCE = raw.source;
+export const INJURIES_SOURCES = raw.sources ?? ['ESPN'];
 
 const MS_PER_DAY = 86_400_000;
 
@@ -86,7 +98,6 @@ export function formatOutSince(injuryDate: string, from = todayISO()): string {
   return months === 1 ? 'Out ~1 month' : `Out ~${months} months`;
 }
 
-
 function formatInjuryDate(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -97,16 +108,31 @@ function formatReturnDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-/** Tooltip lines: injury, status, time out, expected return. */
+function sourceLine(label: string, snap: SourceInjury): string {
+  const parts = [label, snap.tag];
+  if (snap.injury) parts.push(snap.injury);
+  return parts.join(' · ');
+}
+
+/** Tooltip lines: injury, status, cross-ref, time out, expected return. */
 export function injuryTooltip(report: InjuryReport): string {
   const lines: string[] = [];
   if (report.injury) lines.push(report.injury);
   lines.push(report.status);
+
+  if (report.espn && report.sleeper) {
+    if (report.agree === false) {
+      lines.push(`${sourceLine('ESPN', report.espn)}  /  ${sourceLine('Sleeper', report.sleeper)}`);
+    }
+  } else if (report.sleeper && !report.espn) {
+    lines.push('Sleeper only — not on ESPN injury report');
+  }
+
   if (report.injuryDate) {
     lines.push(`Out since ${formatInjuryDate(report.injuryDate)} · ${formatOutSince(report.injuryDate)}`);
   }
   if (report.returnDate) {
-    lines.push(`Expected back ${formatReturnDate(report.returnDate)}`);
+    lines.push(`Expected back ${formatReturnDate(report.returnDate)} (ESPN)`);
     lines.push(formatBackIn(report.returnDate));
   }
   return lines.join('\n');
@@ -141,7 +167,10 @@ function toReport(entry: RawInjuryEntry): InjuryReport {
     status: entry.status,
     ...(entry.injury ? { injury: entry.injury } : {}),
     ...(entry.injuryDate ? { injuryDate: entry.injuryDate } : {}),
-    ...(entry.returnDate ? { returnDate: entry.returnDate } : {})
+    ...(entry.returnDate ? { returnDate: entry.returnDate } : {}),
+    ...(entry.espn ? { espn: entry.espn } : {}),
+    ...(entry.sleeper ? { sleeper: entry.sleeper } : {}),
+    ...(entry.agree !== undefined ? { agree: entry.agree } : {})
   };
 }
 
@@ -169,7 +198,9 @@ const TAG_STATUS: Record<string, string> = {
   SUSP: 'Suspended',
   PUP: 'Physically Unable to Perform',
   NFI: 'Non-Football Injury',
-  DTD: 'Day-To-Day'
+  DTD: 'Day-To-Day',
+  DNR: 'Did Not Report',
+  COV: 'COVID-19'
 };
 
 export function reportFromTag(tag: string): InjuryReport {

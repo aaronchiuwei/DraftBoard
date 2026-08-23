@@ -9,9 +9,12 @@ interface Props {
 /** Short injury tag with a hover tooltip for return date and time out. */
 export function InjuryTag({ report }: Props) {
   const tip = injuryTooltip(report);
+  const classes = [styles.tag, report.agree === false ? styles.split : '']
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <span class={styles.tag} title={tip} aria-label={tip.replace(/\n/g, '. ')}>
+    <span class={classes} title={tip} aria-label={tip.replace(/\n/g, '. ')}>
       {report.tag}
       <span class={styles.tip} role="tooltip">
         {tip.split('\n').map((line, i) => (
