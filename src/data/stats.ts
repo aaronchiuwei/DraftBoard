@@ -104,6 +104,12 @@ export function isRookie(player: Player): boolean {
   return entry !== undefined && entry.a === undefined;
 }
 
+/** Sleeper's projected PPR points for the baked season, or null when missing. */
+export function projectedPointsFor(player: Player): number | null {
+  const entry = data.players[String(player.id)];
+  return value(entry?.p, 'pts');
+}
+
 /**
  * The stat panel for one player, or null when Sleeper has neither a season nor
  * a projection for him. Rows both sides leave empty are dropped, so a rookie

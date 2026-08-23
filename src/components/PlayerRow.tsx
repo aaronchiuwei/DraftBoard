@@ -1,7 +1,7 @@
 import type { Player, RankSource, SourceKey } from '../types';
 import { injuryFor } from '../data/injuries';
 import { depthRoleFor } from '../data/depth';
-import { headshotFor, isRookie } from '../data/stats';
+import { headshotFor, isRookie, projectedPointsFor, formatStat, PROJECTED_SEASON } from '../data/stats';
 import { rankOf, valueFor } from '../domain/rankings';
 import { DepthRoleTag } from './DepthRoleTag';
 import { Headshot } from './Headshot';
@@ -41,6 +41,7 @@ export function PlayerRow({
   const primary = valueFor(player, selected, sourceIds);
   const injury = injuryFor(player);
   const depthRole = depthRoleFor(player);
+  const projected = projectedPointsFor(player);
   const others = sources
     .filter(s => s.id !== selected)
     .map(s => ({ short: s.short, value: rankOf(player, s.id) }))
@@ -53,7 +54,14 @@ export function PlayerRow({
   return (
     <div class={classes}>
       <button class={styles.open} onClick={() => onSelect(player.id)}>
-        <span class={styles.rank}>{formatRank(primary)}</span>
+        <span class={styles.rankCol}>
+          <span class={styles.rank}>{formatRank(primary)}</span>
+          {projected !== null && (
+            <span class={styles.proj} title={`${PROJECTED_SEASON} projected PPR points`}>
+              {formatStat(projected)}
+            </span>
+          )}
+        </span>
         <span class={styles.pos} style={{ background: `var(--${player.pos})` }}>
           {player.pos}
         </span>
