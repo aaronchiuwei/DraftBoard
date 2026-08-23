@@ -20,12 +20,9 @@
 
 .tip {
   display: none;
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 6px);
-  transform: translateX(-50%);
+  position: fixed;
   min-width: 140px;
-  max-width: 220px;
+  max-width: min(220px, calc(100vw - 16px));
   padding: 6px 8px;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -38,8 +35,12 @@
   color: var(--text);
   line-height: 1.35;
   white-space: nowrap;
-  z-index: 20;
+  z-index: 200;
   pointer-events: none;
+}
+
+.tipOn {
+  display: block;
 }
 
 .tip span {
@@ -48,9 +49,4 @@
 
 .tip span:first-child {
   font-weight: 700;
-}
-
-.tag:hover .tip,
-.tag:focus-visible .tip {
-  display: block;
 }
