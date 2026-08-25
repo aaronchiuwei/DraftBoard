@@ -8,7 +8,7 @@ Built for a specific league: **1 QB, 2 RB, 2 WR, 1 TE, 2 FLEX, 1 DEF, 1 K**, sna
 
 Preact + TypeScript, built with Vite, deployed as a static site on Vercel.
 
-**Live site:** [fantasy-football-nine-zeta.vercel.app](https://fantasy-football-nine-zeta.vercel.app/)
+**Live site:** [fantasy-football-draft-board-ppr.vercel.app](https://fantasy-football-draft-board-ppr.vercel.app/)
 
 ---
 
